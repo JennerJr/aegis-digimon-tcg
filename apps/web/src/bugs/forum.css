@@ -739,3 +739,18 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.forum-flag {
+  display: grid;
+  gap: 16px;
+}
+
+.forum-flag h3 {
+  margin: 0;
+}
+
+.forum-flag-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

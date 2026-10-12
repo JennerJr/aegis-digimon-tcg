@@ -293,12 +293,14 @@ export function ForumTopicView({
                   onChange={(event) => setReason(event.target.value)}
                 />
               </label>
-              <Button type="submit" disabled={busy || !reason.trim()}>
-                {t("forum.sendReport")}
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => setFlagTarget(undefined)}>
-                {t("common.cancel")}
-              </Button>
+              <div className="forum-flag-actions">
+                <Button type="submit" disabled={busy || !reason.trim()}>
+                  {t("forum.sendReport")}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setFlagTarget(undefined)}>
+                  {t("common.cancel")}
+                </Button>
+              </div>
             </form>
           ) : null}
           {!topic.hidden ? (
