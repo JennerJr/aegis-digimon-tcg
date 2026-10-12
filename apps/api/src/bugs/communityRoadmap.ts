@@ -221,28 +221,6 @@ export const communityRoadmap: CommunityRoadmap = {
       websiteRequests: 0,
     },
     {
-      id: "effect-decisions",
-      stage: RoadmapStage.REVIEW.value,
-      title: {
-        en: "Clearer effect decisions",
-        "pt-BR": "Decisões de efeito mais claras",
-        es: "Decisiones de efectos más claras",
-      },
-      description: {
-        en: "Identify triggering copies, group candidates by effect and make the decision panel and return-to-decision control easier to use.",
-        "pt-BR":
-          "Identificar cópias que ativam efeitos, agrupar candidatos por efeito e melhorar o painel e o retorno à decisão.",
-        es: "Identificar copias que activan efectos, agrupar candidatos por efecto y mejorar el panel y el retorno a la decisión.",
-      },
-      discordUrls: [
-        "https://discord.com/channels/1525646227608178798/1557228867448737832",
-        "https://discord.com/channels/1525646227608178798/1557645331976421376",
-        "https://discord.com/channels/1525646227608178798/1556325822611333169",
-        "https://discord.com/channels/1525646227608178798/1554910795941548164",
-      ],
-      websiteRequests: 0,
-    },
-    {
       id: "music-shortcut",
       stage: RoadmapStage.IDEA.value,
       title: {
