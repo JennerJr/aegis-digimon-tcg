@@ -14,6 +14,12 @@ export function CommunityHubNav({ section, onDiscussions, onRoadmap, onDecks }: 
   return (
     <nav className="community-hub-nav" aria-label={t("forum.hubNavigation")}>
       <button
+        aria-current={section === CommunityHubSection.DECKS.value ? "page" : undefined}
+        onClick={onDecks ?? (() => location.assign("/community"))}
+      >
+        {t("community.title")}
+      </button>
+      <button
         aria-current={section === CommunityHubSection.DISCUSSIONS.value ? "page" : undefined}
         onClick={onDiscussions ?? (() => location.assign("/feedback"))}
       >
@@ -24,12 +30,6 @@ export function CommunityHubNav({ section, onDiscussions, onRoadmap, onDecks }: 
         onClick={onRoadmap ?? (() => location.assign("/feedback/roadmap"))}
       >
         {t("forum.roadmap")}
-      </button>
-      <button
-        aria-current={section === CommunityHubSection.DECKS.value ? "page" : undefined}
-        onClick={onDecks ?? (() => location.assign("/community"))}
-      >
-        {t("community.title")}
       </button>
     </nav>
   );

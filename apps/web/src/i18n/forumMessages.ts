@@ -269,8 +269,7 @@ export const forumEs = {
   "forum.similar": "Puede que ya exista un tema parecido",
   "forum.publish": "Publicar tema",
   "forum.draftSaved": "Borrador de texto guardado en este dispositivo",
-  "forum.leaveDraft":
-    "¿Salir de este borrador? El texto guardado queda en este dispositivo.",
+  "forum.leaveDraft": "¿Salir de este borrador? El texto guardado queda en este dispositivo.",
   "forum.whatYouDid": "Lo que hiciste",
   "forum.whatExpected": "Lo que esperabas",
   "forum.whatHappened": "Lo que ocurrió",

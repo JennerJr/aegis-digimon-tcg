@@ -13,30 +13,6 @@
   padding: var(--ds-space-10) var(--ds-gutter-desktop) var(--ds-space-12);
 }
 
-.community-hero {
-  display: grid;
-  gap: var(--ds-space-5);
-}
-
-.community-hero__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--ds-space-5);
-}
-
-.community-hero__copy {
-  display: grid;
-  max-width: 56ch;
-  gap: var(--ds-space-2);
-}
-
-.community-hero__copy p {
-  margin: 0;
-  color: var(--ds-text-2);
-}
-
 .community-search {
   display: flex;
   width: min(100%, 340px);
@@ -578,8 +554,11 @@ button.community-report-link:hover {
   gap: var(--ds-space-3);
 }
 
-.community-hub-decks-title {
-  margin: 0;
-  font-family: var(--ds-font-body);
-  font-size: var(--ds-text-xl);
+.community-decks-content {
+  display: grid;
+  gap: var(--ds-space-6);
+}
+
+.community-decks-hub .community-search {
+  width: 100%;
 }

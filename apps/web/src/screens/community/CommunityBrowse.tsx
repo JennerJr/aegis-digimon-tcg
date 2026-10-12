@@ -1,11 +1,11 @@
 import { CommunityHubNav } from "@/community/CommunityHubNav";
 import { CommunityHubSection } from "@/community/CommunityHubSection";
+import "@/bugs/forum.css";
 import { useEffect, useState } from "react";
 import { CardColor, type CommunityDeckSummary, type CommunityPeriod, type CommunitySort } from "@aegis/shared";
 import { communityApi } from "../../community/client";
 import { communityTileListing } from "../../community/communityDeckListing";
-import { Button, ColorDot, Eyebrow, IconButton } from "../../design/primitives";
-import { Panel } from "../../design/surfaces";
+import { Button, ColorDot, IconButton } from "../../design/primitives";
 import { Icons } from "../../design/icons";
 import { useTranslation, type TranslationKey } from "../../i18n";
 import { DeckListCard } from "../DeckListCard";
@@ -97,78 +97,73 @@ export function CommunityBrowse({
     setColors((current) => (current.includes(color) ? current.filter((c) => c !== color) : [...current, color]));
 
   return (
-    <div className="community-page">
-      <div className="community-column aegis-page-sheet">
-        <Panel as="div" className="community-hero">
-          <div className="community-hero__header">
-            <div className="community-hero__copy">
-              <Eyebrow>{t("community.eyebrow")}</Eyebrow>
-              <h1 className="aegis-page-title">{t("forum.title")}</h1>
-              <p>{t("forum.subtitle")}</p>
-            </div>
-            <label className="community-search">
-              <Icons.Search size={16} />
-              <span className="aegis-sr-only">{t("community.search")}</span>
-              <input
-                type="search"
-                value={searchInput}
-                placeholder={t("community.search")}
-                maxLength={60}
-                onChange={(event) => setSearchInput(event.target.value)}
-              />
-            </label>
-          </div>
-          <CommunityHubNav
-            section={CommunityHubSection.DECKS.value}
-            onDiscussions={onDiscussions}
-            onRoadmap={onRoadmap}
+    <section className="forum-page community-decks-hub" aria-labelledby="community-hub-title">
+      <header className="forum-page-heading">
+        <div>
+          <p className="forum-eyebrow">{t("forum.eyebrow")}</p>
+          <h1 id="community-hub-title" className="aegis-page-title">
+            {t("forum.title")}
+          </h1>
+          <p>{t("forum.subtitle")}</p>
+        </div>
+      </header>
+      <CommunityHubNav section={CommunityHubSection.DECKS.value} onDiscussions={onDiscussions} onRoadmap={onRoadmap} />
+      <div className="forum-topic-list community-decks-content">
+        <label className="community-search">
+          <Icons.Search size={16} />
+          <span className="aegis-sr-only">{t("community.search")}</span>
+          <input
+            type="search"
+            value={searchInput}
+            placeholder={t("community.search")}
+            maxLength={60}
+            onChange={(event) => setSearchInput(event.target.value)}
           />
-          <h2 className="community-hub-decks-title">{t("community.title")}</h2>
-          <div className="community-toolbar">
-            <div className="community-segmented" role="group" aria-label={t("community.sortLabel")}>
-              {SORTS.map((option) => (
+        </label>
+        <div className="community-toolbar">
+          <div className="community-segmented" role="group" aria-label={t("community.sortLabel")}>
+            {SORTS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={sort === option.key ? "is-selected" : undefined}
+                aria-pressed={sort === option.key}
+                onClick={() => setSort(option.key)}
+              >
+                {t(option.label)}
+              </button>
+            ))}
+          </div>
+          {sort === "top" ? (
+            <div className="community-segmented" role="group" aria-label={t("community.periodLabel")}>
+              {PERIODS.map((option) => (
                 <button
                   key={option.key}
                   type="button"
-                  className={sort === option.key ? "is-selected" : undefined}
-                  aria-pressed={sort === option.key}
-                  onClick={() => setSort(option.key)}
+                  className={period === option.key ? "is-selected" : undefined}
+                  aria-pressed={period === option.key}
+                  onClick={() => setPeriod(option.key)}
                 >
                   {t(option.label)}
                 </button>
               ))}
             </div>
-            {sort === "top" ? (
-              <div className="community-segmented" role="group" aria-label={t("community.periodLabel")}>
-                {PERIODS.map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    className={period === option.key ? "is-selected" : undefined}
-                    aria-pressed={period === option.key}
-                    onClick={() => setPeriod(option.key)}
-                  >
-                    {t(option.label)}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <div className="community-colors" role="group" aria-label={t("community.colorsLabel")}>
-              {COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className={colors.includes(color) ? "is-selected" : undefined}
-                  aria-pressed={colors.includes(color)}
-                  onClick={() => toggleColor(color)}
-                >
-                  <ColorDot color={color} size={10} />
-                  {color}
-                </button>
-              ))}
-            </div>
+          ) : null}
+          <div className="community-colors" role="group" aria-label={t("community.colorsLabel")}>
+            {COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                className={colors.includes(color) ? "is-selected" : undefined}
+                aria-pressed={colors.includes(color)}
+                onClick={() => toggleColor(color)}
+              >
+                <ColorDot color={color} size={10} />
+                {color}
+              </button>
+            ))}
           </div>
-        </Panel>
+        </div>
 
         <section className="community-results" aria-busy={results.status === "loading"}>
           {results.status === "loading" ? (
@@ -246,6 +241,6 @@ export function CommunityBrowse({
           )}
         </section>
       </div>
-    </div>
+    </section>
   );
 }

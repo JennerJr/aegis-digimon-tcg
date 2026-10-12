@@ -355,15 +355,29 @@ for (const width of [320, 1440]) {
   });
 }
 
-for (const width of [320, 1440]) {
-  test(`community decks share navigation with discussions and roadmap at ${width}px`, async ({ page }) => {
+for (const { width, dark } of [
+  { width: 320, dark: false },
+  { width: 320, dark: true },
+  { width: 1440, dark: false },
+  { width: 1440, dark: true },
+]) {
+  test(`community decks share navigation with discussions and roadmap at ${width}px in ${dark ? "dark" : "light"} mode`, async ({
+    page,
+  }, info) => {
     await page.setViewportSize({ width, height: 900 });
     const forum = new PublicForumPage(page);
     await forum.open({ signedIn: true });
+    await page.evaluate((darkMode) => document.documentElement.classList.toggle("dark", darkMode), dark);
     const hub = page.getByRole("navigation", { name: "Community hub", exact: true });
+    await expect(hub.getByRole("button").first()).toHaveText("Community decks");
+    const discussionHeader = await page.locator(".forum-page-heading").boundingBox();
     await hub.getByRole("button", { name: "Community decks", exact: true }).click();
     await expect(page).toHaveURL(/\/community$/);
     await expect(page.getByRole("heading", { name: "Community hub", exact: true })).toBeVisible();
+    const deckHeader = await page.locator(".forum-page-heading").boundingBox();
+    expect(deckHeader?.x).toBe(discussionHeader?.x);
+    expect(deckHeader?.width).toBe(discussionHeader?.width);
+    await page.screenshot({ path: info.outputPath("community-decks-aligned.png"), fullPage: true });
     await expect(hub.getByRole("button", { name: "Community decks", exact: true })).toHaveAttribute(
       "aria-current",
       "page",

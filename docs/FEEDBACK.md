@@ -118,8 +118,10 @@ New image uploads and attachments are disabled until content moderation is ready
 
 ## Community decks
 
-The public hub uses the same Discussions, Roadmap and Community decks navigation
-on `/feedback`, `/feedback/roadmap` and `/community`. Deck browsing retains search,
+The public hub uses the same Community decks, Discussions and Roadmap navigation
+on `/community`, `/feedback` and `/feedback/roadmap`. Community decks is the first
+tab. Deck browsing shares the forum page width, heading, spacing and content surface
+without an extra enclosing frame. Deck browsing retains search,
 color/sort/period filters, likes, preview, copying and playing with a published deck.
 Deck-detail URLs and the private reporting routes remain compatible. Catalog card
 art continues to render; it is distinct from disabled user image attachments.
