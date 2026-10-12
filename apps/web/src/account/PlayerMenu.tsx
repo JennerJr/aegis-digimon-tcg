@@ -10,7 +10,6 @@ import "./playerMenu.css";
 export function PlayerMenu({
   player,
   signedIn,
-  isAdmin = false,
   anchor,
   onNav,
   onProfile,
@@ -20,7 +19,6 @@ export function PlayerMenu({
 }: {
   player: PlayerIdentity;
   signedIn: boolean;
-  isAdmin?: boolean;
   anchor?: HTMLElement | null;
   onNav: (screen: Screen) => void;
   onProfile: () => void;
@@ -117,12 +115,6 @@ export function PlayerMenu({
           <Icons.Megaphone size={18} />
           {t("forum.title")}
         </button>
-        {signedIn && isAdmin ? (
-          <button onClick={() => go("feedback")}>
-            <Icons.MessageSquare size={18} />
-            {t("feedback.title")}
-          </button>
-        ) : null}
         <details>
           <summary>{t("profile.help")}</summary>
           <button onClick={() => go("releases")}>

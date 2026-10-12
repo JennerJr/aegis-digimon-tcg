@@ -111,7 +111,9 @@ creating GitHub issues; private legacy submissions retain the configured mirror.
 
 Administrators can inspect content flags, hide or restore a topic or reply, and
 include hidden topics in the hub list. Hidden topics and images attached to hidden
-topics/replies return 404 to ordinary readers. Private admin notes remain in triage.
+topics/replies return 404 to ordinary readers. Private admin notes remain in the legacy triage records. The public hub has no
+Team triage or previous-private-report navigation; content reports and moderation
+remain directly on topics.
 
 Existing unattached images remain private to their owner and expire after 24 hours.
 New image uploads and attachments are disabled until content moderation is ready.

@@ -2,7 +2,7 @@ import { ForumRoadmap } from "@/bugs/ForumRoadmap";
 import { CommunityHubNav } from "@/community/CommunityHubNav";
 import { CommunityHubSection } from "@/community/CommunityHubSection";
 import { useEffect, useState } from "react";
-import { Search, Plus, MessageSquare, Bug, Lightbulb, Bookmark, User, ArrowRight } from "lucide-react";
+import { Search, Plus, MessageSquare, Bug, Lightbulb, Bookmark, User } from "lucide-react";
 import { FeedbackKind, FEEDBACK_KINDS } from "@aegis/shared/feedback/FeedbackKind";
 import { ForumScope } from "@aegis/shared/feedback/ForumScope";
 import { ForumSort, FORUM_SORTS } from "@aegis/shared/feedback/ForumSort";
@@ -33,9 +33,7 @@ export function ForumScreen({
   view,
   onSelect,
   onNew,
-  onPrivate,
   onSignIn,
-  onTriage,
   onDecks = () => location.assign("/community"),
   onRoadmap = () => location.assign("/feedback/roadmap"),
 }: {
@@ -46,9 +44,7 @@ export function ForumScreen({
   view?: "new" | "private" | "roadmap";
   onSelect: (id?: number) => void;
   onNew: () => void;
-  onPrivate: () => void;
   onSignIn: () => void;
-  onTriage: (id?: number) => void;
   onRoadmap?: () => void;
   onDecks?: () => void;
 }) {
@@ -146,7 +142,6 @@ export function ForumScreen({
         onSelect={onSelect}
         onSignIn={onSignIn}
         onNew={onNew}
-        onTriage={() => onTriage(selectedId)}
       />
     );
   const scope = filter.scope ?? ForumScope.ALL.value;
@@ -210,14 +205,7 @@ export function ForumScreen({
                 {label}
               </button>
             ))}
-            <button onClick={onPrivate}>{t("forum.privateReports")}</button>
           </div>
-          {isAdmin ? (
-            <button onClick={() => onTriage()}>
-              {t("forum.triage")}
-              <ArrowRight size={16} />
-            </button>
-          ) : null}
         </nav>
         <div className="forum-topic-list">
           <label className="forum-search">

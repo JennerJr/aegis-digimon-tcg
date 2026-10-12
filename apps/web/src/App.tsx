@@ -546,8 +546,6 @@ export function AegisClient({
               isAdmin={account?.isAdmin === true}
               onSelect={openOwnFeedback}
               onNew={() => navigate({ screen: "myFeedback", feedbackView: "new" })}
-              onPrivate={() => navigate({ screen: "myFeedback", feedbackView: "private" })}
-              onTriage={(feedbackId) => navigate({ screen: "feedback", feedbackId })}
               onSignIn={() => navigateScreen("login")}
             />
           )}
@@ -756,7 +754,6 @@ export function AegisClient({
           player={effectivePlayer}
           signedIn={!!account}
           anchor={playerMenuAnchor}
-          isAdmin={account?.isAdmin === true}
           onNav={navigateScreen}
           onProfile={() => navigate({ screen: "settings", profile: true })}
           onSignOut={

@@ -160,9 +160,7 @@ describe("public forum hub", () => {
           isAdmin={false}
           onSelect={selected}
           onNew={vi.fn<() => void>()}
-          onPrivate={vi.fn<() => void>()}
           onSignIn={vi.fn<() => void>()}
-          onTriage={vi.fn<() => void>()}
         />
       </I18nProvider>,
     );

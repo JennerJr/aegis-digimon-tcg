@@ -24,7 +24,6 @@ export function ForumTopicView({
   onSelect,
   onSignIn,
   onNew,
-  onTriage,
 }: {
   id: number;
   signedIn: boolean;
@@ -34,7 +33,6 @@ export function ForumTopicView({
   onSelect: (id: number) => void;
   onSignIn: () => void;
   onNew: () => void;
-  onTriage: () => void;
 }) {
   const { t, locale } = useTranslation();
   const [topic, setTopic] = useState<ForumTopicDetail>();
@@ -335,9 +333,6 @@ export function ForumTopicView({
           </ol>
           {isAdmin ? (
             <div className="forum-moderation">
-              <Button variant="secondary" onClick={onTriage}>
-                {t("forum.triage")}
-              </Button>
               <Button variant="ghost" disabled={busy} onClick={() => moderate(null, !topic.hidden)}>
                 {t(topic.hidden ? "forum.restore" : "forum.hide")}
               </Button>

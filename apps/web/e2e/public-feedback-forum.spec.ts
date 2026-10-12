@@ -207,7 +207,7 @@ test.describe("public forum participation", () => {
     await expect(page.getByRole("button", { name: "Also happens to me · 13" })).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("button", { name: "Follow", exact: true }).click();
     await expect(page.getByRole("button", { name: "Following", exact: true })).toHaveAttribute("aria-pressed", "true");
-    await page.getByLabel("Add details or a screenshot").fill("I reproduced this issue with another card.");
+    await page.getByLabel("Add details").fill("I reproduced this issue with another card.");
     await page.getByRole("button", { name: "Reply", exact: true }).click();
     await expect(page.getByText("I reproduced this issue with another card.", { exact: true })).toBeVisible();
   });
@@ -284,7 +284,7 @@ test("long discussions keep loaded pages and display new replies immediately", a
     await route.fulfill({ json: { ok: true } });
   });
   await forum.openTopic();
-  await page.getByLabel("Add details or a screenshot").fill("New reply beyond the first page");
+  await page.getByLabel("Add details").fill("New reply beyond the first page");
   await page.getByRole("button", { name: "Reply", exact: true }).click();
   await expect(page.getByText("New reply beyond the first page", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "More replies", exact: true }).click();
@@ -297,6 +297,8 @@ test("long discussions keep loaded pages and display new replies immediately", a
 test("moderation reconciles replies published beyond loaded pages", async ({ page }) => {
   const forum = new PublicForumPage(page);
   await forum.open({ signedIn: true, isAdmin: true });
+  await expect(page.getByRole("button", { name: "Team triage", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Previous private reports", exact: true })).toHaveCount(0);
   const firstPage = Array.from({ length: 20 }, (_, index) => ({
     id: index + 1,
     authorName: "Player",
@@ -325,7 +327,7 @@ test("moderation reconciles replies published beyond loaded pages", async ({ pag
     await route.fulfill({ json: { ok: true } });
   });
   await forum.openTopic();
-  await page.getByLabel("Add details or a screenshot").fill(posted.body);
+  await page.getByLabel("Add details").fill(posted.body);
   await page.getByRole("button", { name: "Reply", exact: true }).click();
   const reply = page.getByRole("article").filter({ hasText: "Newest official reply" });
   await reply.getByRole("button", { name: "Hide content" }).click();

@@ -48,12 +48,10 @@ it("dismisses outside without blocking the page", () => {
   expect(props.onClose).toHaveBeenCalled();
 });
 
-it("shows the feedback inbox only to signed-in administrators", () => {
-  open({ signedIn: true });
+it("opens the community hub without a legacy feedback inbox shortcut", () => {
+  const props = open({ signedIn: true });
   expect(screen.queryByRole("button", { name: "Player feedback" })).toBeNull();
-  cleanup();
-  const props = open({ signedIn: true, isAdmin: true });
-  fireEvent.click(screen.getByRole("button", { name: "Player feedback" }));
-  expect(props.onNav).toHaveBeenCalledWith("feedback");
+  fireEvent.click(screen.getByRole("button", { name: "Community hub" }));
+  expect(props.onNav).toHaveBeenCalledWith("myFeedback");
   expect(props.onClose).toHaveBeenCalled();
 });
