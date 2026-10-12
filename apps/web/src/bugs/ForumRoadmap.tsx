@@ -17,6 +17,7 @@ const COLUMNS = [
   { stage: RoadmapStage.DEVELOPMENT.value, status: FeedbackStatus.IN_PROGRESS.value, label: "forum.roadmap.doing" },
   { stage: RoadmapStage.REVIEW.value, status: FeedbackStatus.TRIAGED.value, label: "forum.roadmap.review" },
   { stage: RoadmapStage.IDEA.value, status: FeedbackStatus.NEW.value, label: "forum.roadmap.ideas" },
+  { stage: RoadmapStage.COMPLETED.value, status: FeedbackStatus.RESOLVED.value, label: "forum.roadmap.completed" },
 ] as const;
 
 type ForumRoadmapParams = {

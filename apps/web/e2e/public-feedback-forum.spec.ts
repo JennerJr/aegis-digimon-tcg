@@ -228,7 +228,7 @@ test("composer preserves drafts on navigation and failed publication", async ({ 
 
 for (const width of [320, 1440]) {
   for (const dark of [false, true]) {
-    test(`roadmap shows pending improvements without releases at ${width}px in ${dark ? "dark" : "light"} mode`, async ({
+    test(`roadmap shows pending and completed improvements without releases at ${width}px in ${dark ? "dark" : "light"} mode`, async ({
       page,
     }, info) => {
       await page.setViewportSize({ width, height: 900 });
@@ -243,7 +243,13 @@ for (const width of [320, 1440]) {
       await expect(page.getByRole("heading", { name: "Friends and match invitations", exact: true })).toBeVisible();
       await expect(page.getByRole("link", { name: /Save collection filters/ })).toBeVisible();
       await expect(page.getByRole("link", { name: /Improve mobile effects/ })).toBeVisible();
-      await expect(page.getByRole("link", { name: /Completed layout fix/ })).toHaveCount(0);
+      const completed = page.getByRole("region", { name: "Completed", exact: true });
+      await expect(completed.getByRole("link", { name: /Completed layout fix/ })).toBeVisible();
+      await completed.getByRole("button", { name: "View all", exact: true }).click();
+      await expect(page).toHaveURL(/\/feedback$/);
+      await expect(page.getByRole("combobox", { name: "Filter by status" })).toHaveValue("resolved");
+      await page.getByRole("button", { name: "Roadmap", exact: true }).click();
+      await expect(completed).toBeVisible();
       await expect(page.getByRole("link", { name: /Effect timing after digivolution/ })).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "Already available in Aegis" })).toHaveCount(0);
       await expect(page.getByRole("button", { name: /What's new|All release notes/ })).toHaveCount(0);
