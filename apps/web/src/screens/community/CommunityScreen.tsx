@@ -19,6 +19,8 @@ export function CommunityScreen({
   onBack,
   onPlay,
   onCopy,
+  onDiscussions,
+  onRoadmap,
 }: {
   deckId: string | undefined;
   signedIn: boolean;
@@ -28,6 +30,8 @@ export function CommunityScreen({
   onBack: () => void;
   onPlay: (deck: CommunityDeck) => void;
   onCopy: (deck: CommunityDeck) => void;
+  onDiscussions?: () => void;
+  onRoadmap?: () => void;
 }) {
   const { t } = useTranslation();
   const [toast, setToast] = useState<string>();
@@ -61,6 +65,8 @@ export function CommunityScreen({
         />
       ) : (
         <CommunityBrowse
+          onDiscussions={onDiscussions}
+          onRoadmap={onRoadmap}
           signedIn={signedIn}
           accountId={accountId}
           onOpenDeck={onOpenDeck}

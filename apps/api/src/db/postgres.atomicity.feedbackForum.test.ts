@@ -94,17 +94,18 @@ describe.skipIf(!enabled)("public forum persistence and access", () => {
     expect(response.status).toBe(200);
     return response.json() as Promise<ForumTopicDetail>;
   }
-  async function upload(cookie = "reporter"): Promise<FeedbackImage> {
+  async function legacyImage(): Promise<FeedbackImage> {
     const bytes = await sharp({ create: { width: 10, height: 10, channels: 3, background: "#ff00ff" } })
-      .png()
+      .webp()
       .toBuffer();
-    const response = await fetch(url + "/feedback/images?name=board.png", {
-      method: "POST",
-      headers: { Cookie: cookie, "Content-Type": "image/png" },
-      body: bytes,
+    return forum.upload({ accountId: reporter.account.id, name: "old-board.webp", width: 10, height: 10, bytes });
+  }
+  async function legacyTopic(image: FeedbackImage): Promise<number> {
+    return forum.create({
+      report: { kind: "bug", summary: "Existing illustrated report", description: "Existing text", cardIds: [] },
+      accountId: reporter.account.id,
+      imageIds: [image.id],
     });
-    expect(response.status).toBe(201);
-    return response.json() as Promise<FeedbackImage>;
   }
   it("publishes pending roadmap summaries without exposing private report records", async () => {
     const privateTitle = "Confidential roadmap request";
@@ -182,40 +183,46 @@ describe.skipIf(!enabled)("public forum persistence and access", () => {
       (await call("POST", "/feedback/topics", "reporter", { summary: "large", description: "x".repeat(20001) })).status,
     ).toBe(400);
   });
-  it("stores sanitized images and binds attachments atomically to their owner", async () => {
-    const image = await upload();
-    expect((await call("GET", `/feedback/images/${image.id}`)).status).toBe(404);
-    expect((await call("GET", `/feedback/images/${image.id}`, "reporter")).headers.get("content-type")).toContain(
-      "image/webp",
-    );
-    const failed = await call("POST", "/feedback/topics", "other", {
-      summary: "Stolen",
-      description: "x",
+  it("disables image uploads and rejects attachments in new topics and replies", async () => {
+    const bytes = await sharp({ create: { width: 10, height: 10, channels: 3, background: "#ff00ff" } })
+      .png()
+      .toBuffer();
+    for (const actor of ["reporter", "admin"]) {
+      const uploadResponse = await fetch(url + "/feedback/images", {
+        method: "POST",
+        headers: { Cookie: actor, "Content-Type": "image/png" },
+        body: bytes,
+      });
+      expect(uploadResponse.status).toBe(410);
+      expect(await uploadResponse.json()).toEqual({ error: "image_uploads_disabled" });
+    }
+    const image = await legacyImage();
+    const rejected = await call("POST", "/feedback/topics", "reporter", {
+      summary: "New attachment",
+      description: "Text",
       imageIds: [image.id],
     });
-    expect(failed.status).toBe(400);
+    expect(rejected.status).toBe(400);
     expect((await pool.query("SELECT id FROM feedback_reports")).rows).toHaveLength(0);
-    const id = await topic({ imageIds: [image.id] });
-    expect((await detail(id)).images[0]!.id).toBe(image.id);
+    const id = await topic();
+    expect(
+      (await call("POST", `/feedback/topics/${id}/comments`, "reporter", { body: "Text", imageIds: [image.id] }))
+        .status,
+    ).toBe(400);
+    expect((await detail(id)).comments).toHaveLength(0);
+    expect(
+      (await call("POST", `/feedback/topics/${id}/comments`, "reporter", { body: "Text", imageIds: [] })).status,
+    ).toBe(201);
+  });
+  it("preserves access controls for existing image attachments", async () => {
+    const image = await legacyImage();
+    expect((await call("GET", `/feedback/images/${image.id}`)).status).toBe(404);
+    const id = await legacyTopic(image);
+    expect((await detail(id)).images[0]?.id).toBe(image.id);
     const response = await call("GET", `/feedback/images/${image.id}`);
     expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("image/webp");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
-    expect(
-      (
-        await call("POST", "/feedback/topics", "reporter", {
-          summary: "Reused",
-          description: "x",
-          imageIds: [image.id],
-        })
-      ).status,
-    ).toBe(400);
-    expect((await pool.query("SELECT id FROM feedback_reports")).rows).toHaveLength(1);
-    const invalid = await fetch(url + "/feedback/images", {
-      method: "POST",
-      headers: { Cookie: "reporter", "Content-Type": "image/png" },
-      body: "<svg><script>bad()</script></svg>",
-    });
-    expect(invalid.status).toBe(400);
   });
   it("handles concurrent support idempotently and pages replies in chronological order", async () => {
     const id = await topic();
@@ -275,8 +282,8 @@ describe.skipIf(!enabled)("public forum persistence and access", () => {
     expect(followed.items).toEqual([]);
   });
   it("restricts moderation to admins and removes hidden topics, replies and images from public access", async () => {
-    const image = await upload();
-    const id = await topic({ imageIds: [image.id] });
+    const image = await legacyImage();
+    const id = await legacyTopic(image);
     await call("POST", `/feedback/topics/${id}/comments`, "other", { body: "Reply" });
     const commentId = (await detail(id)).comments[0]!.id;
     expect((await call("PATCH", `/feedback/topics/${id}/moderation`, "other", { hidden: true })).status).toBe(403);

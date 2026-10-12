@@ -110,28 +110,14 @@ describe("public topic composer", () => {
     );
     expect((screen.getByLabelText("Your report") as HTMLTextAreaElement).value).toBe("What I did and what happened");
   });
-  it("uploads images before publication and attaches the server receipt", async () => {
+  it("publishes text without exposing image attachment controls", async () => {
     const fetchMock = mockApi();
     const { container } = dialog();
     fill();
-    fireEvent.change(container.querySelector('input[type="file"]')!, {
-      target: { files: [new File(["png"], "board.png", { type: "image/png" })] },
-    });
-    await screen.findByRole("button", { name: "Remove board.png" });
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add images" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Publish topic" }));
     await screen.findByText("Your topic has been published");
-    const call = fetchMock.mock.calls.find(
-      ([path, init]) => String(path).includes("/topics") && init?.method === "POST",
-    );
-    expect(JSON.parse(call![1]!.body as string).imageIds).toEqual(["e42249e5-ba6e-4528-b517-63bee8fbbb0f"]);
-  });
-  it("prevents invalid image files from reaching the upload endpoint", async () => {
-    const fetchMock = mockApi();
-    const { container } = dialog();
-    fireEvent.change(container.querySelector('input[type="file"]')!, {
-      target: { files: [new File(["<svg/>"], "image.svg", { type: "image/svg+xml" })] },
-    });
-    await screen.findByText(/Could not upload images/);
     expect(fetchMock.mock.calls.some(([path]) => String(path).includes("/images"))).toBe(false);
   });
 });
@@ -184,7 +170,7 @@ describe("public forum hub", () => {
     expect(link.getAttribute("href")).toBe("/feedback/9");
     fireEvent.click(link);
     expect(selected).toHaveBeenCalledWith(9);
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Community feedback" })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Community hub" })).toBeTruthy());
   });
   it("renders Markdown without executable HTML or remote image tracking", () => {
     const { container } = render(

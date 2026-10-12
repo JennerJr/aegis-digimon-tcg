@@ -5,7 +5,8 @@ import { RoadmapStage } from "@aegis/shared/feedback/RoadmapStage";
 import type { CommunityRoadmap } from "@aegis/shared/feedback/roadmapTypes";
 import type { ForumPage, ForumFilter } from "@aegis/shared/feedback/forumTypes";
 import { forumClient } from "@/bugs/forumClient";
-import { ForumHubNav } from "@/bugs/ForumHubNav";
+import { CommunityHubNav } from "@/community/CommunityHubNav";
+import { CommunityHubSection } from "@/community/CommunityHubSection";
 import { RoadmapSuggestion } from "@/bugs/RoadmapSuggestion";
 import { useTranslation } from "@/i18n/useTranslation";
 import { Badge, Button, Alert } from "@/design/primitives";
@@ -23,9 +24,10 @@ type ForumRoadmapParams = {
   onFilter: (filter: Partial<ForumFilter>) => void;
   onDiscussions: () => void;
   onNew: () => void;
+  onDecks?: () => void;
 };
 
-export function ForumRoadmap({ onSelect, onFilter, onDiscussions, onNew }: ForumRoadmapParams) {
+export function ForumRoadmap({ onSelect, onFilter, onDiscussions, onNew, onDecks }: ForumRoadmapParams) {
   const { t } = useTranslation();
   const [data, setData] = useState<{ catalog: CommunityRoadmap; pages: (ForumPage | undefined)[] }>();
   const [failed, setFailed] = useState(false);
@@ -63,7 +65,12 @@ export function ForumRoadmap({ onSelect, onFilter, onDiscussions, onNew }: Forum
         </div>
         <Button onClick={onNew}>{t("forum.suggestImprovement")}</Button>
       </header>
-      <ForumHubNav roadmap onDiscussions={onDiscussions} onRoadmap={() => undefined} />
+      <CommunityHubNav
+        section={CommunityHubSection.ROADMAP.value}
+        onDecks={onDecks}
+        onDiscussions={onDiscussions}
+        onRoadmap={() => undefined}
+      />
       <p className="forum-roadmap-note">{t("forum.roadmapNote")}</p>
       {failed ? (
         <Alert tone="warning" title={t("forum.loadError")}>

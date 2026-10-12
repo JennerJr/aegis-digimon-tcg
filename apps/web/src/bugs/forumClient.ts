@@ -2,7 +2,6 @@ import { accountApi } from "@/account/client";
 import { BugReportApiError, type BugReportDraft } from "@/bugs/client";
 import type { CommunityRoadmap } from "@aegis/shared/feedback/roadmapTypes";
 import type {
-  FeedbackImage,
   ForumCommentPage,
   ForumComment,
   ForumFilter,
@@ -67,12 +66,6 @@ export const forumClient = {
   },
   member({ id, change }: { id: number; change: { supported?: boolean; following?: boolean } }): Promise<{ ok: true }> {
     return request({ path: `/topics/${id}/member`, init: json({ method: "PUT", body: change }) });
-  },
-  upload(file: File): Promise<FeedbackImage> {
-    return request({
-      path: `/images?name=${encodeURIComponent(file.name)}`,
-      init: { method: "POST", headers: { "Content-Type": file.type }, body: file },
-    });
   },
   imageUrl(id: string): string {
     return `${accountApi.base}/feedback/images/${id}`;

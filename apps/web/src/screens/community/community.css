@@ -577,3 +577,9 @@ button.community-report-link:hover {
   align-items: center;
   gap: var(--ds-space-3);
 }
+
+.community-hub-decks-title {
+  margin: 0;
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-xl);
+}

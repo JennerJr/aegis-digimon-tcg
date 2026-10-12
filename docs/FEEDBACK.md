@@ -6,17 +6,16 @@ bug also affects them, report content, or follow updates.
 
 ## Topics and discussion
 
-New topics use the existing Bug, Improvement and Other types. Reports support up
-to 20,000 characters, safe Markdown formatting, a preview and five images of up to
-5 MiB each. Images can be chosen, dragged or pasted. PNG, JPEG and WebP inputs are
-decoded and normalized to WebP on the API, with a 16-million-pixel input limit and
-a maximum output edge of 2,048 pixels. Metadata is removed; animated and unsupported
-formats are refused.
+New topics use the existing Bug, Improvement and Other types. Reports support
+up to 20,000 characters, safe Markdown formatting and a preview. Topics and replies
+are text-only for now: there are no upload, paste-image or drop-image controls.
+The upload endpoint returns 410 and nonempty attachment lists are rejected by the
+publication and reply APIs. Existing image attachments retain their original
+read-access and moderation rules; no existing data is deleted.
 
 Text drafts for new topics are saved on the device for the signed-in account and
 expire after 24 hours. Reply text drafts survive reloads within the current browser
-session. Images must be added again after leaving a draft. Navigation is guarded
-while a draft is dirty or an upload/submission is running.
+session. Navigation is guarded while a draft is dirty or a submission is running.
 
 The author follows their topic automatically. Following is optional for other
 readers, and everyone, including the author, can unfollow. Public replies and
@@ -41,7 +40,7 @@ The preview uses its isolated local database; it does not connect to production.
 After merging local main on the same day, the snapshot was checked again against
 the v1.25 implementation and newly completed requests were removed.
 
-The catalog contains 22 pending themes, with English, Brazilian Portuguese and
+The catalog contains 21 pending themes, with English, Brazilian Portuguese and
 Spanish summaries and public Discord source links where available. Website reports
 are represented by editorial summaries and a source label, without exposing authors,
 account IDs, private report URLs or original submissions. It is a reviewed snapshot,
@@ -85,10 +84,9 @@ team completion replies and current product code are also checked.
 Partially fulfilled requests retain only their pending scope: opponent decklists
 beyond viewing your own deck, uploaded profile
 images beyond built-in/Discord avatars, exact play-cost and digivolution filters
-beyond existing text search, replay annotations beyond playback, and smaller/easier
-effect decisions beyond earlier modal fixes. The latest effect-panel discussion
-includes an explicit team review and remaining user complaints, so it is under
-review. Other requests remain ideas unless there is evidence of a team commitment.
+beyond existing text search, and replay annotations beyond playback. The effect-decision
+theme was removed from the roadmap at the project owner’s request. Other requests
+remain ideas unless there is evidence of a team commitment.
 
 Raw database and MCP captures stay in ignored `.local/`; they are not committed.
 
@@ -115,12 +113,18 @@ Administrators can inspect content flags, hide or restore a topic or reply, and
 include hidden topics in the hub list. Hidden topics and images attached to hidden
 topics/replies return 404 to ordinary readers. Private admin notes remain in triage.
 
-Unattached images are readable only by their owner until they expire after 24
-hours. Upload writes prune expired unattached images and enforce a per-account
-budget of 50 images in a rolling day. Publishing binds images to the authenticated
-owner's topic or reply in the same transaction. A previously attached or
-foreign-owned image cannot be reused. API actions and uploads also have short-term
-rate limits.
+Existing unattached images remain private to their owner and expire after 24 hours.
+New image uploads and attachments are disabled until content moderation is ready.
+
+## Community decks
+
+The public hub uses the same Discussions, Roadmap and Community decks navigation
+on `/feedback`, `/feedback/roadmap` and `/community`. Deck browsing retains search,
+color/sort/period filters, likes, preview, copying and playing with a published deck.
+Deck-detail URLs and the private reporting routes remain compatible. Catalog card
+art continues to render; it is distinct from disabled user image attachments.
+
+The ImageGen prototype and browser captures are saved in ignored `.local/`.
 
 ## Validation
 

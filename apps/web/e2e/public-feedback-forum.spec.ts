@@ -57,6 +57,7 @@ class PublicForumPage {
         }
         body = { id: "forum-fixture", displayName: "Kai", isAdmin, avatarUrl: null, avatarId: null };
       } else if (requestPath === "/account/decks") body = [];
+      else if (requestPath === "/community/decks") body = { decks: [], hasMore: false };
       else if (requestPath === "/feedback/roadmap")
         body = {
           reviewedAt: "2026-10-12",
@@ -171,7 +172,7 @@ for (const width of [320, 768, 1440]) {
       const forum = new PublicForumPage(page);
       await forum.open();
       await page.evaluate((darkMode) => document.documentElement.classList.toggle("dark", darkMode), dark);
-      await expect(page.getByRole("heading", { name: "Community feedback", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Community hub", exact: true })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
       await page.screenshot({ path: info.outputPath("forum.png"), fullPage: true });
       await forum.openTopic();
@@ -185,7 +186,7 @@ for (const width of [320, 768, 1440]) {
 }
 
 test.describe("public forum participation", () => {
-  test("signed-in players publish an image, support, follow and reply to public topics", async ({ page }) => {
+  test("signed-in players publish text, support, follow and reply to public topics", async ({ page }) => {
     const forum = new PublicForumPage(page);
     const submissions = await forum.open({ signedIn: true });
     await page.getByRole("button", { name: "New topic", exact: true }).click();
@@ -196,14 +197,12 @@ test.describe("public forum participation", () => {
       page.getByRole("region", { name: "Preview" }).getByRole("heading", { name: "What happened" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Write", exact: true }).click();
-    await page
-      .locator('input[type="file"]')
-      .setInputFiles({ name: "board.png", mimeType: "image/png", buffer: Buffer.from("fixture") });
-    await expect(page.getByRole("button", { name: "Remove board.png" })).toBeVisible();
+    await expect(page.locator('input[type="file"]')).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Add images" })).toHaveCount(0);
     await page.getByRole("button", { name: "Publish topic", exact: true }).click();
     await expect(page).toHaveURL(/\/feedback\/7$/);
     expect(submissions).toHaveLength(1);
-    expect(submissions[0]!.imageIds).toEqual(["e42249e5-ba6e-4528-b517-63bee8fbbb0f"]);
+    expect(submissions[0]!.imageIds).toEqual([]);
     await page.getByRole("button", { name: "Also happens to me · 12" }).click();
     await expect(page.getByRole("button", { name: "Also happens to me · 13" })).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("button", { name: "Follow", exact: true }).click();
@@ -353,5 +352,30 @@ for (const width of [320, 1440]) {
     await expect(publish).toBeInViewport();
     const button = await publish.boundingBox();
     expect(button!.y + button!.height).toBeLessThanOrEqual(width < 960 ? 832 : 900);
+  });
+}
+
+for (const width of [320, 1440]) {
+  test(`community decks share navigation with discussions and roadmap at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const forum = new PublicForumPage(page);
+    await forum.open({ signedIn: true });
+    const hub = page.getByRole("navigation", { name: "Community hub", exact: true });
+    await hub.getByRole("button", { name: "Community decks", exact: true }).click();
+    await expect(page).toHaveURL(/\/community$/);
+    await expect(page.getByRole("heading", { name: "Community hub", exact: true })).toBeVisible();
+    await expect(hub.getByRole("button", { name: "Community decks", exact: true })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await expect(page.getByRole("searchbox", { name: "Search decks or players" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+    await hub.getByRole("button", { name: "Roadmap", exact: true }).click();
+    await expect(page).toHaveURL(/\/feedback\/roadmap$/);
+    await expect(page.getByRole("heading", { name: "Ranked / Leaderboard", exact: true })).toBeVisible();
+    await hub.getByRole("button", { name: "Discussions", exact: true }).click();
+    await expect(page).toHaveURL(/\/feedback$/);
+    await page.getByRole("button", { name: "New topic", exact: true }).click();
+    await expect(page.locator('input[type="file"]')).toHaveCount(0);
   });
 }

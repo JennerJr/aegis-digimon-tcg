@@ -540,6 +540,7 @@ export function AegisClient({
               signedIn={!!account}
               selectedId={route.feedbackId}
               view={route.feedbackView}
+              onDecks={() => navigate({ screen: "community" })}
               onRoadmap={() => navigate({ screen: "myFeedback", feedbackView: "roadmap" })}
               accountId={account?.id}
               isAdmin={account?.isAdmin === true}
@@ -639,6 +640,8 @@ export function AegisClient({
 
           {screen === "community" && (
             <CommunityScreen
+              onDiscussions={() => navigate({ screen: "myFeedback" })}
+              onRoadmap={() => navigate({ screen: "myFeedback", feedbackView: "roadmap" })}
               deckId={route.communityDeckId}
               signedIn={!!account}
               accountId={account?.id}

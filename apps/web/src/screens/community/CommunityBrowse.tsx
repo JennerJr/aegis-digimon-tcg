@@ -1,3 +1,5 @@
+import { CommunityHubNav } from "@/community/CommunityHubNav";
+import { CommunityHubSection } from "@/community/CommunityHubSection";
 import { useEffect, useState } from "react";
 import { CardColor, type CommunityDeckSummary, type CommunityPeriod, type CommunitySort } from "@aegis/shared";
 import { communityApi } from "../../community/client";
@@ -32,12 +34,16 @@ export function CommunityBrowse({
   onOpenDeck,
   onPlay,
   onCopy,
+  onDiscussions,
+  onRoadmap,
 }: {
   signedIn: boolean;
   accountId: string | undefined;
   onOpenDeck: (id: string) => void;
   onPlay: (id: string) => void;
   onCopy: (id: string) => void;
+  onDiscussions?: () => void;
+  onRoadmap?: () => void;
 }) {
   const { t } = useTranslation();
   const [sort, setSort] = useState<CommunitySort>("top");
@@ -97,8 +103,8 @@ export function CommunityBrowse({
           <div className="community-hero__header">
             <div className="community-hero__copy">
               <Eyebrow>{t("community.eyebrow")}</Eyebrow>
-              <h1 className="aegis-page-title">{t("community.title")}</h1>
-              <p>{t("community.subtitle")}</p>
+              <h1 className="aegis-page-title">{t("forum.title")}</h1>
+              <p>{t("forum.subtitle")}</p>
             </div>
             <label className="community-search">
               <Icons.Search size={16} />
@@ -112,6 +118,12 @@ export function CommunityBrowse({
               />
             </label>
           </div>
+          <CommunityHubNav
+            section={CommunityHubSection.DECKS.value}
+            onDiscussions={onDiscussions}
+            onRoadmap={onRoadmap}
+          />
+          <h2 className="community-hub-decks-title">{t("community.title")}</h2>
           <div className="community-toolbar">
             <div className="community-segmented" role="group" aria-label={t("community.sortLabel")}>
               {SORTS.map((option) => (

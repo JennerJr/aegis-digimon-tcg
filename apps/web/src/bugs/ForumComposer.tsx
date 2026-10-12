@@ -2,7 +2,7 @@ import { useForumDraftGuard } from "@/bugs/useForumDraftGuard";
 import { useEffect, useId, useState } from "react";
 import { Bug, Lightbulb, MessageSquare, ArrowLeft } from "lucide-react";
 import { FeedbackKind, FEEDBACK_KINDS } from "@aegis/shared/feedback/FeedbackKind";
-import type { FeedbackImage, ForumTopic } from "@aegis/shared/feedback/forumTypes";
+import type { ForumTopic } from "@aegis/shared/feedback/forumTypes";
 import { MAX_FORUM_BODY, FORUM_PENDING_IMAGE_RETENTION_MS } from "@aegis/shared/feedback/forumLimits";
 import { MAX_BUG_REPORT_SUMMARY, MAX_BUG_REPORT_CARDS, MAX_BUG_REPORT_OPPONENT_DECK } from "@/bugs/client";
 import { forumClient } from "@/bugs/forumClient";
@@ -39,17 +39,15 @@ export function ForumComposer({
   const id = useId();
   const draftKey = accountId ? `aegis.forum.draft:${accountId}:${matchLogId ?? "general"}` : undefined;
   const [draft, setDraft] = useState<Draft>(() => restore(draftKey));
-  const [images, setImages] = useState<FeedbackImage[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [similar, setSimilar] = useState<ForumTopic[]>([]);
   const [filed, setFiled] = useState<number>();
-  const dirty = !!(draft.summary.trim() || draft.description.trim() || images.length || draft.cardIds.length);
+  const dirty = !!(draft.summary.trim() || draft.description.trim() || draft.cardIds.length);
   const bypassNavigationGuard = useForumDraftGuard({
     dirty: dirty && filed === undefined,
-    busy: saving || uploading,
+    busy: saving,
     message: t("forum.leaveDraft"),
   });
   useEffect(() => {
@@ -98,7 +96,7 @@ export function ForumComposer({
         cardIds: draft.kind === FeedbackKind.BUG.value ? draft.cardIds : [],
         opponentDeck: draft.kind === FeedbackKind.BUG.value ? draft.opponentDeck : undefined,
         matchId: matchLogId,
-        imageIds: images.map((image) => image.id),
+        imageIds: [],
       });
       bypassNavigationGuard.current = true;
       setFiled(result.id);
@@ -113,7 +111,7 @@ export function ForumComposer({
     }
   };
   const cancel = () => {
-    if (saving || uploading) return;
+    if (saving) return;
     if (!dirty || filed !== undefined || window.confirm(t("forum.leaveDraft"))) {
       bypassNavigationGuard.current = true;
       onCancel();
@@ -122,7 +120,7 @@ export function ForumComposer({
   return (
     <section className="forum-composer" aria-labelledby={id}>
       <header className="forum-page-heading">
-        <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={cancel} disabled={saving || uploading}>
+        <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={cancel} disabled={saving}>
           {t("forum.back")}
         </Button>
         <h1 id={id} className="aegis-page-title">
@@ -146,7 +144,7 @@ export function ForumComposer({
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              if (!saving && !uploading && draft.summary.trim() && draft.description.trim()) void submit();
+              if (!saving && draft.summary.trim() && draft.description.trim()) void submit();
             }}
           >
             <fieldset className="forum-kind">
@@ -193,9 +191,6 @@ export function ForumComposer({
             <ForumEditor
               value={draft.description}
               onChange={(description) => setDraft((current) => ({ ...current, description }))}
-              images={images}
-              onImages={setImages}
-              onBusy={setUploading}
               disabled={saving}
               label={t("forum.body")}
             />
@@ -223,13 +218,10 @@ export function ForumComposer({
             <p className="forum-public-note">{t("forum.publicNote")}</p>
             <footer className="forum-compose-actions">
               <span role="status">{draftSaved && dirty ? t("forum.draftSaved") : ""}</span>
-              <Button variant="ghost" type="button" onClick={cancel} disabled={saving || uploading}>
+              <Button variant="ghost" type="button" onClick={cancel} disabled={saving}>
                 {t("common.cancel")}
               </Button>
-              <Button
-                type="submit"
-                disabled={saving || uploading || !draft.summary.trim() || !draft.description.trim()}
-              >
+              <Button type="submit" disabled={saving || !draft.summary.trim() || !draft.description.trim()}>
                 {saving ? t("bugReport.submitting") : t("forum.publish")}
               </Button>
             </footer>
@@ -240,7 +232,7 @@ export function ForumComposer({
               <li>{t("forum.whatYouDid")}</li>
               <li>{t("forum.whatExpected")}</li>
               <li>{t("forum.whatHappened")}</li>
-              <li>{t("forum.imagesOrMatch")}</li>
+              <li>{t("forum.matchContext")}</li>
             </ol>
             <p>{t("forum.beforePosting")}</p>
           </aside>

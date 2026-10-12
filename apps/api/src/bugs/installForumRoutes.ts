@@ -1,5 +1,4 @@
-import express, { type Express, type Request, type Response, type NextFunction } from "express";
-import sharp from "sharp";
+import type { Express, Request, Response, NextFunction } from "express";
 import type { AuthSession } from "#api/accounts/AccountStore";
 import type { FeedbackStore } from "#api/bugs/FeedbackStore";
 import { ForumStore } from "#api/bugs/ForumStore";
@@ -14,13 +13,7 @@ import { FORUM_SORTS, ForumSort } from "@aegis/shared/feedback/ForumSort";
 import { FORUM_SCOPES, ForumScope } from "@aegis/shared/feedback/ForumScope";
 import { isFeedbackStatus } from "@aegis/shared/feedback/isFeedbackStatus";
 import { MAX_FEEDBACK_SEARCH } from "@aegis/shared/feedback/limits";
-import {
-  MAX_FORUM_BODY,
-  MAX_FORUM_IMAGES,
-  MAX_FORUM_IMAGE_BYTES,
-  MAX_FORUM_IMAGE_PIXELS,
-  MAX_FORUM_FLAG_REASON,
-} from "@aegis/shared/feedback/forumLimits";
+import { MAX_FORUM_BODY, MAX_FORUM_FLAG_REASON } from "@aegis/shared/feedback/forumLimits";
 import type { ForumFilter } from "@aegis/shared/feedback/forumTypes";
 
 type Deps = {
@@ -38,7 +31,6 @@ export function installForumRoutes({ app, forum, feedback, session, replayCaptur
     res.set("Cache-Control", "no-store").json(communityRoadmap);
   });
   const writes = tokenBucketLimiter({ capacity: 10, refillMs: 60_000 });
-  const uploads = tokenBucketLimiter({ capacity: 5, refillMs: 30_000 });
   const route =
     (handler: Handler, signed = false, admin = false) =>
     (req: Request, res: Response, next: NextFunction) => {
@@ -218,64 +210,9 @@ export function installForumRoutes({ app, forum, feedback, session, replayCaptur
     ),
   );
 
-  app.post(
-    "/feedback/images",
-    (req, res, next) => {
-      void session(req)
-        .then((auth) => {
-          if (!auth) {
-            res.status(401).json({ error: "authentication_required" });
-            return;
-          }
-          if (!uploads(auth.account.id)) {
-            res.status(429).json({ error: "too_many_requests" });
-            return;
-          }
-          res.locals.forumAuth = auth;
-          next();
-        })
-        .catch(next);
-    },
-    express.raw({ type: ["image/png", "image/jpeg", "image/webp"], limit: MAX_FORUM_IMAGE_BYTES }),
-    (req, res, next) => {
-      void (async () => {
-        if (!Buffer.isBuffer(req.body) || !req.body.length) {
-          res.status(400).json({ error: "invalid_image" });
-          return;
-        }
-        let converted;
-        try {
-          const pipeline = sharp(req.body, { limitInputPixels: MAX_FORUM_IMAGE_PIXELS });
-          const metadata = await pipeline.metadata();
-          if (!["png", "jpeg", "webp"].includes(metadata.format ?? "") || (metadata.pages ?? 1) > 1)
-            throw new Error("invalid_image");
-          converted = await pipeline
-            .rotate()
-            .resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true })
-            .webp({ quality: 85 })
-            .timeout({ seconds: 10 })
-            .toBuffer({ resolveWithObject: true });
-        } catch {
-          res.status(400).json({ error: "invalid_image" });
-          return;
-        }
-        const auth = res.locals.forumAuth as AuthSession;
-        const name = typeof req.query.name === "string" ? req.query.name.slice(0, 120) : "image";
-        res.status(201).json(
-          await forum.upload({
-            accountId: auth.account.id,
-            name,
-            width: converted.info.width,
-            height: converted.info.height,
-            bytes: converted.data,
-          }),
-        );
-      })().catch((error: unknown) => {
-        if (error instanceof ForumWriteError) res.status(429).json({ error: error.message });
-        else next(error);
-      });
-    },
-  );
+  app.post("/feedback/images", (_req, res) => {
+    res.set("Cache-Control", "no-store").status(410).json({ error: "image_uploads_disabled" });
+  });
   app.get(
     "/feedback/images/:id",
     route(async (req, res, auth) => {
@@ -294,13 +231,8 @@ export function installForumRoutes({ app, forum, feedback, session, replayCaptur
 }
 
 function images(value: unknown): string[] | undefined {
-  if (value === undefined) return [];
-  return Array.isArray(value) &&
-    value.length <= MAX_FORUM_IMAGES &&
-    value.every((id) => typeof id === "string" && IMAGE_ID.test(id)) &&
-    new Set(value).size === value.length
-    ? value
-    : undefined;
+  if (value === undefined || (Array.isArray(value) && value.length === 0)) return [];
+  return undefined;
 }
 
 function parseFilter(query: Request["query"]): ForumFilter | undefined {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { FeedbackImage, ForumComment } from "@aegis/shared/feedback/forumTypes";
+import type { ForumComment } from "@aegis/shared/feedback/forumTypes";
 import { MAX_FORUM_BODY } from "@aegis/shared/feedback/forumLimits";
 import { ForumEditor } from "@/bugs/ForumEditor";
 import { forumClient } from "@/bugs/forumClient";
@@ -25,13 +25,11 @@ export function ForumReply({
       return "";
     }
   });
-  const [images, setImages] = useState<FeedbackImage[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   useForumDraftGuard({
-    dirty: !!(body.trim() || images.length),
-    busy: saving || uploading,
+    dirty: !!body.trim(),
+    busy: saving,
     message: t("forum.leaveDraft"),
   });
   useEffect(() => {
@@ -45,9 +43,8 @@ export function ForumReply({
     setSaving(true);
     setFailed(false);
     try {
-      const comment = await forumClient.comment({ id: id, draft: { body, imageIds: images.map((image) => image.id) } });
+      const comment = await forumClient.comment({ id: id, draft: { body, imageIds: [] } });
       setBody("");
-      setImages([]);
       onReplied(comment);
     } catch {
       setFailed(true);
@@ -60,20 +57,12 @@ export function ForumReply({
       className="forum-reply"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!saving && !uploading && body.trim()) void submit();
+        if (!saving && body.trim()) void submit();
       }}
     >
-      <ForumEditor
-        value={body}
-        onChange={setBody}
-        images={images}
-        onImages={setImages}
-        onBusy={setUploading}
-        disabled={saving}
-        label={t("forum.replyLabel")}
-      />
+      <ForumEditor value={body} onChange={setBody} disabled={saving} label={t("forum.replyLabel")} />
       {failed ? <Alert tone="warning" title={t("forum.saveError")} /> : null}
-      <Button type="submit" disabled={saving || uploading || !body.trim()}>
+      <Button type="submit" disabled={saving || !body.trim()}>
         {t("forum.reply")}
       </Button>
     </form>

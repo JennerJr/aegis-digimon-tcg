@@ -1,5 +1,6 @@
 import { ForumRoadmap } from "@/bugs/ForumRoadmap";
-import { ForumHubNav } from "@/bugs/ForumHubNav";
+import { CommunityHubNav } from "@/community/CommunityHubNav";
+import { CommunityHubSection } from "@/community/CommunityHubSection";
 import { useEffect, useState } from "react";
 import { Search, Plus, MessageSquare, Bug, Lightbulb, Bookmark, User, ArrowRight } from "lucide-react";
 import { FeedbackKind, FEEDBACK_KINDS } from "@aegis/shared/feedback/FeedbackKind";
@@ -35,6 +36,7 @@ export function ForumScreen({
   onPrivate,
   onSignIn,
   onTriage,
+  onDecks = () => location.assign("/community"),
   onRoadmap = () => location.assign("/feedback/roadmap"),
 }: {
   signedIn: boolean;
@@ -48,6 +50,7 @@ export function ForumScreen({
   onSignIn: () => void;
   onTriage: (id?: number) => void;
   onRoadmap?: () => void;
+  onDecks?: () => void;
 }) {
   const { t, locale } = useTranslation();
   const [filter, setFilter] = useState<Partial<ForumFilter>>({});
@@ -109,6 +112,7 @@ export function ForumScreen({
         }}
         onDiscussions={() => onSelect()}
         onNew={onNew}
+        onDecks={onDecks}
       />
     );
   if (view === "new")
@@ -164,7 +168,12 @@ export function ForumScreen({
           {t("forum.newTopic")}
         </Button>
       </header>
-      <ForumHubNav onDiscussions={() => onSelect()} onRoadmap={onRoadmap} />
+      <CommunityHubNav
+        section={CommunityHubSection.DISCUSSIONS.value}
+        onDecks={onDecks}
+        onDiscussions={() => onSelect()}
+        onRoadmap={onRoadmap}
+      />
       <div className="forum-layout">
         <nav className="forum-sidebar" aria-label={t("forum.categories")}>
           <button
