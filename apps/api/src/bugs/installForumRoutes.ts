@@ -4,6 +4,7 @@ import type { AuthSession } from "#api/accounts/AccountStore";
 import type { FeedbackStore } from "#api/bugs/FeedbackStore";
 import { ForumStore } from "#api/bugs/ForumStore";
 import { ForumWriteError } from "#api/bugs/ForumWriteError";
+import { communityRoadmap } from "#api/bugs/communityRoadmap";
 import { validate } from "#api/bugs/routes";
 import { captureReportReplay, type ReplayCapturer } from "#api/bugs/replayCapture";
 import { parseId } from "#api/http/parseId";
@@ -33,6 +34,9 @@ type Handler = (req: Request, res: Response, auth?: AuthSession) => Promise<void
 const IMAGE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function installForumRoutes({ app, forum, feedback, session, replayCapture }: Deps): void {
+  app.get("/feedback/roadmap", (_req, res) => {
+    res.set("Cache-Control", "no-store").json(communityRoadmap);
+  });
   const writes = tokenBucketLimiter({ capacity: 10, refillMs: 60_000 });
   const uploads = tokenBucketLimiter({ capacity: 5, refillMs: 30_000 });
   const route =

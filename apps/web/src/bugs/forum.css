@@ -703,7 +703,8 @@
   margin-bottom: 12px;
 }
 
-.forum-roadmap-column a {
+.forum-roadmap-column li > a,
+.forum-roadmap-suggestion {
   display: block;
   padding: 16px;
   border: 1px solid var(--ds-line);
@@ -720,43 +721,37 @@
   overflow-wrap: anywhere;
 }
 
-.forum-roadmap-column a:hover h3 {
+.forum-roadmap-column li > a:hover h3 {
   color: var(--ds-accent);
 }
 
-.forum-roadmap-column a > span:last-child,
-.forum-delivered li > span {
+.forum-roadmap-column li > a > span:last-child,
+.forum-roadmap-reviewed {
   font-size: var(--ds-text-xs);
   color: var(--ds-text-3);
 }
 
-.forum-delivered {
-  margin-top: 32px;
-  padding: 24px;
-  background: var(--ds-sheet);
-  border: 1px solid var(--ds-line);
-  border-radius: var(--ds-radius-md);
+.forum-roadmap-reviewed {
+  margin-bottom: 16px;
 }
 
-.forum-delivered header {
+.forum-roadmap-suggestion p {
+  font-size: var(--ds-text-sm);
+  line-height: 1.6;
+  color: var(--ds-text-2);
+}
+
+.forum-roadmap-sources {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-3);
 }
 
-.forum-delivered h2 {
-  font-size: var(--ds-text-xl);
-}
-
-.forum-delivered li {
-  margin-bottom: 12px;
-  line-height: 1.7;
-}
-
-.forum-delivered li > span {
-  white-space: nowrap;
+.forum-roadmap-sources a {
+  color: var(--ds-accent);
+  text-underline-offset: 3px;
 }
 
 @media (max-width: 959px) {

@@ -4,12 +4,10 @@ export function ForumHubNav({
   roadmap = false,
   onDiscussions,
   onRoadmap,
-  onReleases,
 }: {
   roadmap?: boolean;
   onDiscussions: () => void;
   onRoadmap: () => void;
-  onReleases: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -20,7 +18,6 @@ export function ForumHubNav({
       <button aria-current={roadmap ? "page" : undefined} onClick={onRoadmap}>
         {t("forum.roadmap")}
       </button>
-      <button onClick={onReleases}>{t("forum.releases")}</button>
     </nav>
   );
 }

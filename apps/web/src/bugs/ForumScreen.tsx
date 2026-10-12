@@ -36,7 +36,6 @@ export function ForumScreen({
   onSignIn,
   onTriage,
   onRoadmap = () => location.assign("/feedback/roadmap"),
-  onReleases = () => location.assign("/whats-new"),
 }: {
   signedIn: boolean;
   accountId?: string;
@@ -49,7 +48,6 @@ export function ForumScreen({
   onSignIn: () => void;
   onTriage: (id?: number) => void;
   onRoadmap?: () => void;
-  onReleases?: () => void;
 }) {
   const { t, locale } = useTranslation();
   const [filter, setFilter] = useState<Partial<ForumFilter>>({});
@@ -110,7 +108,6 @@ export function ForumScreen({
           onSelect();
         }}
         onDiscussions={() => onSelect()}
-        onReleases={onReleases}
         onNew={onNew}
       />
     );
@@ -167,7 +164,7 @@ export function ForumScreen({
           {t("forum.newTopic")}
         </Button>
       </header>
-      <ForumHubNav onDiscussions={() => onSelect()} onRoadmap={onRoadmap} onReleases={onReleases} />
+      <ForumHubNav onDiscussions={() => onSelect()} onRoadmap={onRoadmap} />
       <div className="forum-layout">
         <nav className="forum-sidebar" aria-label={t("forum.categories")}>
           <button

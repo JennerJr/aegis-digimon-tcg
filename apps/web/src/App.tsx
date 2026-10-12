@@ -541,7 +541,6 @@ export function AegisClient({
               selectedId={route.feedbackId}
               view={route.feedbackView}
               onRoadmap={() => navigate({ screen: "myFeedback", feedbackView: "roadmap" })}
-              onReleases={() => navigateScreen("releases")}
               accountId={account?.id}
               isAdmin={account?.isAdmin === true}
               onSelect={openOwnFeedback}

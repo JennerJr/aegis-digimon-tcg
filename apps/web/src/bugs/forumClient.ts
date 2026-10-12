@@ -1,5 +1,6 @@
 import { accountApi } from "@/account/client";
 import { BugReportApiError, type BugReportDraft } from "@/bugs/client";
+import type { CommunityRoadmap } from "@aegis/shared/feedback/roadmapTypes";
 import type {
   FeedbackImage,
   ForumCommentPage,
@@ -25,7 +26,12 @@ async function request<T>({ path, init = {} }: { path: string; init?: RequestIni
 function json({ method, body }: { method: string; body: unknown }): RequestInit {
   return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
 }
+type RoadmapRequestParams = { signal?: AbortSignal };
+
 export const forumClient = {
+  roadmap({ signal }: RoadmapRequestParams = {}): Promise<CommunityRoadmap> {
+    return request({ path: "/roadmap", init: { signal } });
+  },
   list({
     filter = {},
     signal,

@@ -11,6 +11,8 @@ import { installBugReportRoutes } from "#api/bugs/routes";
 import { NotificationStore } from "#api/notifications/NotificationStore";
 import { FeedbackStatus } from "@aegis/shared/feedback/FeedbackStatus";
 import type { ForumPage, ForumTopicDetail, FeedbackImage } from "@aegis/shared/feedback/forumTypes";
+import type { CommunityRoadmap } from "@aegis/shared/feedback/roadmapTypes";
+import { RoadmapStage } from "@aegis/shared/feedback/RoadmapStage";
 
 const enabled = process.env.POSTGRES_TESTS === "1";
 const connection = process.env.POSTGRES_TEST_URL;
@@ -104,6 +106,38 @@ describe.skipIf(!enabled)("public forum persistence and access", () => {
     expect(response.status).toBe(201);
     return response.json() as Promise<FeedbackImage>;
   }
+  it("publishes pending roadmap summaries without exposing private report records", async () => {
+    const privateTitle = "Confidential roadmap request";
+    await call("POST", "/bug-reports", "reporter", {
+      summary: privateTitle,
+      description: "Private account details",
+      kind: "improvement",
+    });
+    const response = await call("GET", "/feedback/roadmap");
+    expect(response.status).toBe(200);
+    const roadmap = (await response.json()) as CommunityRoadmap;
+    expect(roadmap.items.find((entry) => entry.id === "ranked-leaderboard")?.stage).toBe(RoadmapStage.PLANNED.value);
+    expect(roadmap.items.some((entry) => entry.id === "friends" && entry.websiteRequests > 0)).toBe(true);
+    expect(new Set(roadmap.items.map((entry) => entry.id)).size).toBe(roadmap.items.length);
+    for (const entry of roadmap.items) {
+      expect(Object.keys(entry).sort()).toEqual([
+        "description",
+        "discordUrls",
+        "id",
+        "stage",
+        "title",
+        "websiteRequests",
+      ]);
+      expect(Object.values(RoadmapStage).map((stage) => stage.value)).toContain(entry.stage);
+      for (const sourceUrl of entry.discordUrls)
+        expect(sourceUrl).toMatch(/^https:\/\/discord\.com\/channels\/\d+\/\d+$/);
+      expect(Object.values(entry.title).every(Boolean)).toBe(true);
+      expect(Object.values(entry.description).every(Boolean)).toBe(true);
+    }
+    expect(JSON.stringify(roadmap)).not.toContain(privateTitle);
+    expect(JSON.stringify(roadmap)).not.toContain("Private account details");
+    expect(roadmap.items.map((entry) => entry.id)).not.toContain("replay-playback");
+  });
   it("keeps legacy reports private and projects only public-safe fields", async () => {
     const legacy = await call("POST", "/bug-reports", "reporter", {
       summary: "Private",

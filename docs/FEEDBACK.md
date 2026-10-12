@@ -27,22 +27,70 @@ Comments are loaded chronologically in pages of 20. New replies are displayed
 immediately, and loading more comments preserves the rest of the discussion.
 Support is idempotent per account and does not determine the team's priorities.
 
-## Roadmap and delivered features
+## Pending community roadmap
 
-`/feedback/roadmap` presents four columns driven by public topic status:
+`/feedback/roadmap` shows pending improvements only. It has no release-note tab,
+release catalog, delivered column or already-available feature section.
 
-| Column          | Existing serialized status | Scope              |
-| --------------- | -------------------------- | ------------------ |
-| Community ideas | `new`                      | Improvement topics |
-| Under review    | `triaged`                  | Public topics      |
-| In development  | `in_progress`              | Public topics      |
-| Delivered       | `resolved`                 | Public topics      |
+The API serves a curated snapshot at `/feedback/roadmap`, owned by
+`apps/api/src/bugs/communityRoadmap.ts`. The snapshot was reviewed on 2026-10-12
+against production improvement reports through the `oracle-vps` SSH alias and the
+Discord suggestions forum through the Aegis MCP `list_bugs` and `get_bug` tools.
+Production was queried in a read-only transaction with statement and lock timeouts.
+The preview uses its isolated local database; it does not connect to production.
+After merging local main on the same day, the snapshot was checked again against
+the v1.25 implementation and newly completed requests were removed.
 
-Each column shows the 20 most recent topics and provides a link to the complete
-filtered discussion list. Ideas are proposals, not commitments or release-date
-promises. Administrators maintain the statuses through the existing triage UI.
-The “Already available” section reads actual feature entries from the committed
-release catalog; complete release notes remain at `/whats-new`.
+The catalog contains 22 pending themes, with English, Brazilian Portuguese and
+Spanish summaries and public Discord source links where available. Website reports
+are represented by editorial summaries and a source label, without exposing authors,
+account IDs, private report URLs or original submissions. It is a reviewed snapshot,
+not an automatic synchronization job; later status changes require updating the
+catalog and review date. No new persistence schema or production writes are needed.
+
+| Column          | Curated stage | Public improvement status |
+| --------------- | ------------- | ------------------------- |
+| Planned         | `planned`     | Curated team decisions    |
+| In development  | `development` | `in_progress`             |
+| Under review    | `review`      | `triaged`                 |
+| Community ideas | `idea`        | `new`                     |
+
+Public topic queries always filter to Improvement and exclude completed topics.
+Each topic-backed column shows the 20 most recent discussions and links to the
+complete filtered list. Curated suggestions link directly to their original Discord
+threads. Neither a request nor support counts promise a release date.
+
+### Review decisions and provenance
+
+Ranked / Leaderboard is planned, rather than delivered: production improvement 77
+is marked resolved, but its closing response explicitly defers availability. Discord
+suggestion `1556079380667830374` is tagged Planned and the team says Ranked is hidden
+until match reliability improves. `1557810820010745867` adds seasonal leaderboard
+requests; cosmetic rewards remain a separate community idea.
+
+Website reports represented in the snapshot: 138 (friends), 135 (feedback on AI use
+in development), 133 (blocking clarity), 128 (opponent decklists), 127
+(Korean card images), 123 (an explicit low-time popup), and
+77 (Ranked). Equivalent requests from the website and Discord are combined.
+
+Requests omitted as already fulfilled include Korean interface translations (107),
+bot deck selection including saved decks (122), private-match rollback (99),
+inspection/copying of your own post-match deck (119), basic replay/history playback,
+post-game board inspection, card inspection that survives opponent actions, text and
+keyword card search, configurable private timers, corrected timer behavior during
+mulligans/disconnects, unread-chat indication, unlimited formats, and the earlier
+deckbuilder layout changes. Done tags take precedence over stale open thread status;
+team completion replies and current product code are also checked.
+
+Partially fulfilled requests retain only their pending scope: opponent decklists
+beyond viewing your own deck, uploaded profile
+images beyond built-in/Discord avatars, exact play-cost and digivolution filters
+beyond existing text search, replay annotations beyond playback, and smaller/easier
+effect decisions beyond earlier modal fixes. The latest effect-panel discussion
+includes an explicit team review and remaining user complaints, so it is under
+review. Other requests remain ideas unless there is evidence of a team commitment.
+
+Raw database and MCP captures stay in ignored `.local/`; they are not committed.
 
 ## Privacy and moderation
 

@@ -57,15 +57,56 @@ class PublicForumPage {
         }
         body = { id: "forum-fixture", displayName: "Kai", isAdmin, avatarUrl: null, avatarId: null };
       } else if (requestPath === "/account/decks") body = [];
+      else if (requestPath === "/feedback/roadmap")
+        body = {
+          reviewedAt: "2026-10-12",
+          items: [
+            {
+              id: "ranked-leaderboard",
+              stage: "planned",
+              title: { en: "Ranked / Leaderboard", "pt-BR": "Ranked / Leaderboard", es: "Ranked / Leaderboard" },
+              description: {
+                en: "Enable ranked matches when reliability is ready.",
+                "pt-BR": "Liberar partidas ranqueadas quando estiverem estáveis.",
+                es: "Habilitar partidas clasificatorias cuando sean estables.",
+              },
+              discordUrls: ["https://discord.com/channels/1525646227608178798/1556079380667830374"],
+              websiteRequests: 1,
+            },
+            {
+              id: "friends",
+              stage: "idea",
+              title: {
+                en: "Friends and match invitations",
+                "pt-BR": "Amigos e convites para partidas",
+                es: "Amigos e invitaciones a partidas",
+              },
+              description: {
+                en: "Find players, add friends and invite them to play.",
+                "pt-BR": "Buscar jogadores e convidar amigos para jogar.",
+                es: "Buscar jugadores e invitar amigos a jugar.",
+              },
+              discordUrls: [],
+              websiteRequests: 1,
+            },
+          ],
+        };
       else if (requestPath === "/feedback/topics" && method === "GET") {
-        const status = new URL(route.request().url()).searchParams.get("status");
+        const query = new URL(route.request().url()).searchParams;
+        const status = query.get("status");
+        const kind = query.get("kind");
         const variants = [
           current,
           { ...current, id: 8, kind: "improvement", status: "new", summary: "Save collection filters" },
-          { ...current, id: 9, status: "in_progress", summary: "Improve mobile effects" },
-          { ...current, id: 10, status: "resolved", summary: "Completed layout fix" },
+          { ...current, id: 9, kind: "improvement", status: "in_progress", summary: "Improve mobile effects" },
+          { ...current, id: 10, kind: "improvement", status: "resolved", summary: "Completed layout fix" },
         ];
-        body = { items: status ? variants.filter((item) => item.status === status) : [current], nextOffset: null };
+        body = {
+          items: status
+            ? variants.filter((item) => item.status === status && (!kind || item.kind === kind))
+            : [current],
+          nextOffset: null,
+        };
       } else if (requestPath === "/feedback/topics" && method === "POST") {
         submissions.push(route.request().postDataJSON());
         if (failPublication) {
@@ -186,21 +227,36 @@ test("composer preserves drafts on navigation and failed publication", async ({ 
   await expect(page.getByLabel("Title", { exact: true })).toHaveValue("A detailed effect timing report");
 });
 
-test("roadmap uses public topic stages and published release features", async ({ page }) => {
-  const forum = new PublicForumPage(page);
-  await forum.open();
-  await page.getByRole("button", { name: "Roadmap", exact: true }).click();
-  await expect(page).toHaveURL(/\/feedback\/roadmap$/);
-  await expect(page.getByRole("heading", { name: "Community roadmap", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Community ideas", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "In development", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Delivered", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Save collection filters/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Completed layout fix/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Already available in Aegis" })).toBeVisible();
-  await page.getByRole("button", { name: "All release notes" }).click();
-  await expect(page).toHaveURL(/\/whats-new$/);
-});
+for (const width of [320, 1440]) {
+  for (const dark of [false, true]) {
+    test(`roadmap shows pending improvements without releases at ${width}px in ${dark ? "dark" : "light"} mode`, async ({
+      page,
+    }, info) => {
+      await page.setViewportSize({ width, height: 900 });
+      const forum = new PublicForumPage(page);
+      await forum.open();
+      await page.getByRole("button", { name: "Roadmap", exact: true }).click();
+      await page.evaluate((darkMode) => document.documentElement.classList.toggle("dark", darkMode), dark);
+      await expect(page).toHaveURL(/\/feedback\/roadmap$/);
+      await expect(page.getByRole("heading", { name: "Community roadmap", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Ranked / Leaderboard", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Planned", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Friends and match invitations", exact: true })).toBeVisible();
+      await expect(page.getByRole("link", { name: /Save collection filters/ })).toBeVisible();
+      await expect(page.getByRole("link", { name: /Improve mobile effects/ })).toBeVisible();
+      await expect(page.getByRole("link", { name: /Completed layout fix/ })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: /Effect timing after digivolution/ })).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Already available in Aegis" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /What's new|All release notes/ })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: /Discord suggestion 1: Ranked/ })).toHaveAttribute(
+        "href",
+        "https://discord.com/channels/1525646227608178798/1556079380667830374",
+      );
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: info.outputPath("roadmap.png"), fullPage: true });
+    });
+  }
+}
 
 test("long discussions keep loaded pages and display new replies immediately", async ({ page }) => {
   const forum = new PublicForumPage(page);
