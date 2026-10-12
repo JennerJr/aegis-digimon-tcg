@@ -395,3 +395,43 @@ for (const { width, dark } of [
     await expect(page.locator('input[type="file"]')).toHaveCount(0);
   });
 }
+
+for (const { width, dark } of [
+  { width: 320, dark: false },
+  { width: 320, dark: true },
+  { width: 1440, dark: false },
+  { width: 1440, dark: true },
+]) {
+  test(`card suggestions form an aligned selectable list at ${width}px in ${dark ? "dark" : "light"} mode`, async ({
+    page,
+  }, info) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const forum = new PublicForumPage(page);
+    await forum.open({ signedIn: true, path: "/feedback/new" });
+    await expect(page.getByText("Cards and match context (optional)", { exact: true })).toBeVisible();
+    await page.evaluate((darkMode) => document.documentElement.classList.toggle("dark", darkMode), dark);
+    await page.getByText("Cards and match context (optional)", { exact: true }).click();
+    const input = page.getByRole("textbox", { name: "Cards involved", exact: true });
+    await input.fill("agu");
+    const list = page.getByRole("listbox", { name: "Cards involved", exact: true });
+    const option = page.getByRole("option", { name: /Agumon.*BT1-010/ });
+    await expect(list).toBeVisible();
+    const inputBox = await input.boundingBox();
+    const listBox = await list.boundingBox();
+    expect(listBox!.width).toBeCloseTo(inputBox!.width, 0);
+    expect(await option.evaluate((element) => getComputedStyle(element).display)).toBe("flex");
+    const nameBox = await option.locator("strong").boundingBox();
+    const codeBox = await option.locator("span").boundingBox();
+    expect(codeBox!.x - nameBox!.x - nameBox!.width).toBeGreaterThanOrEqual(7);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: info.outputPath("card-suggestions.png"), fullPage: true });
+    await option.click();
+    await expect(page.getByRole("button", { name: "Remove BT1-010", exact: true })).toBeVisible();
+    await expect(list).toHaveCount(0);
+    await page.getByRole("button", { name: "Remove BT1-010", exact: true }).click();
+    await input.fill("BT1-011");
+    await input.press("Enter");
+    await expect(page.getByRole("button", { name: "Remove BT1-011", exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/feedback\/new$/);
+  });
+}

@@ -1,0 +1,102 @@
+.bug-report__cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}
+
+.bug-report__combobox {
+  position: relative;
+}
+
+.bug-report__suggestions {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 0;
+  max-height: 240px;
+  margin: var(--ds-space-1) 0 0;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--ds-line);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-sheet);
+  list-style: none;
+  box-shadow: var(--ds-shadow-raise);
+}
+
+.bug-report__suggestion {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--ds-space-2);
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  border: 0;
+  background: transparent;
+  color: var(--ds-text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bug-report__suggestion[data-active] {
+  background: var(--ds-accent-soft);
+}
+
+.bug-report__suggestion strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.bug-report__suggestion span {
+  flex-shrink: 0;
+  color: var(--ds-text-3);
+  font-family: var(--ds-font-mono);
+}
+
+.bug-report__hint {
+  margin: 0;
+  color: var(--ds-text-3);
+  font-size: 0.78rem;
+}
+
+.bug-report__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bug-report__chip {
+  display: inline-flex;
+  gap: var(--ds-space-2);
+  align-items: center;
+  padding: 2px var(--ds-space-1) 2px var(--ds-space-2);
+  border: 1px solid color-mix(in srgb, var(--ds-accent) 35%, transparent);
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-accent-soft);
+  color: var(--ds-accent);
+  font: 600 var(--ds-text-xs) / 1.4 var(--ds-font-mono);
+}
+
+.bug-report__chip button {
+  display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  background: transparent;
+  color: var(--ds-text-3);
+  cursor: pointer;
+}
+
+.bug-report__chip button:hover {
+  color: var(--ds-danger);
+}

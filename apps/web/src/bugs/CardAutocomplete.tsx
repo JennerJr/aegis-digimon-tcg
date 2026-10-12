@@ -5,6 +5,7 @@ import { useId, useMemo, useState, type KeyboardEvent } from "react";
 import { allCards } from "@aegis/shared";
 import { Icons } from "../design/icons";
 import { useTranslation } from "../i18n";
+import "@/bugs/CardAutocomplete.css";
 
 const MAX_SUGGESTIONS = 8;
 
