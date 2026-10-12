@@ -5,7 +5,15 @@ test("King Drasil's turn start does not wait on Gallantmon's DP expiry", async (
   test.setTimeout(120_000);
   await scenario.openFixture(fixtureDrasilTurnHandoff, "normal", "none");
   // The bot plays out its whole turn, including Gallantmon's attack and security check.
-  await expect.poll(async () => (await scenario.snapshot()).turnSeat, { timeout: 60_000 }).toBe(0);
+  await expect
+    .poll(
+      async () => {
+        const state = await scenario.snapshot();
+        return state.turnSeat === 0 && state.turnCount >= fixtureDrasilTurnHandoff.turnCount + 2;
+      },
+      { timeout: 60_000 },
+    )
+    .toBe(true);
   await scenario.resolveUntil(
     (s) => s.turnSeat === 0 && s.phase === "Main" && !s.pendingDecision && s.players[0]!.breeding?.stack.length === 1,
   );

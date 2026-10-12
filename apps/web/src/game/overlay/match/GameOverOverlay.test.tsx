@@ -1,5 +1,9 @@
+import { UsedDeckDialog } from "@/game/UsedDeckDialog";
+import { DECKS, copyDeckPreset, type DeckListing } from "@/game/decks";
+import { saveDecks, loadDecks } from "@/identity";
+import type { UsedDeck } from "@aegis/shared/decks/UsedDeck";
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { I18nProvider } from "../../../i18n";
 import { GameOverOverlay } from "./GameOverOverlay";
@@ -125,4 +129,57 @@ describe("best-of-three result", () => {
     renderSeries({ stage: "over", outcome: "win", endReason: "forfeit", viewerWins: 1, opponentWins: 0 });
     expect(screen.getByText("Nova left the series.")).toBeTruthy();
   });
+});
+
+it("opens the exact used deck after a duel and saves an independent personal copy with attribution and artwork", () => {
+  const original = DECKS[0]!;
+  const snapshot: UsedDeck = {
+    deckId: "community-used",
+    deckName: "Deck at match start",
+    mainDeck: [...original.mainDeck],
+    eggDeck: [...original.eggDeck],
+    mainDeckArts: [...original.mainDeck],
+    eggDeckArts: [...original.eggDeck],
+    format: "BT1",
+    community: { id: "publication", author: { id: "author", displayName: "Original Author" } },
+  };
+  const onCopy = vi.fn<(deck: DeckListing) => void>((deck: DeckListing) => saveDecks([copyDeckPreset(deck, [])]));
+  const view = render(
+    <I18nProvider>
+      <GameOverOverlay
+        result="win"
+        reason="security"
+        stats={[]}
+        onMenu={() => undefined}
+        onRematch={() => undefined}
+        onViewUsedDeck={() =>
+          view.rerender(
+            <I18nProvider>
+              <UsedDeckDialog snapshot={snapshot} onCopy={onCopy} onClose={() => undefined} />
+            </I18nProvider>,
+          )
+        }
+      />
+    </I18nProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "View used deck" }));
+  expect(screen.getByRole("heading", { name: /Deck at match start/ })).toBeTruthy();
+  expect(screen.getByText("Original Author")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Use deck" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Copy to edit" }));
+  expect(onCopy).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button", { name: "Copied!" })).toHaveProperty("disabled", true);
+  const saved = loadDecks()[0]!;
+  expect(saved.id).not.toBe(snapshot.deckId);
+  expect(saved.mainDeck).toEqual(snapshot.mainDeck);
+  expect(saved.eggDeck).toEqual(snapshot.eggDeck);
+  expect(saved.mainDeckArts).toEqual(snapshot.mainDeckArts);
+  expect(saved.eggDeckArts).toEqual(snapshot.eggDeckArts);
+  expect(saved.format).toBe("BT1");
+  expect(saved.community).toEqual(snapshot.community);
+  snapshot.mainDeck[0] = "BT1-010";
+  snapshot.community!.author.displayName = "Changed author";
+  expect(loadDecks()[0]!.mainDeck).toEqual(original.mainDeck);
+  expect(loadDecks()[0]!.community!.author.displayName).toBe("Original Author");
+  localStorage.removeItem("aegis:decks");
 });

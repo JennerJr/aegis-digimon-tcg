@@ -1,4 +1,52 @@
 {
+  "releases.1.25.0-beta.summary": {
+    "en": "Casual match rollback, community deck discovery, and more reliable card effects and battle presentation.",
+    "pt-BR": "Rollback em partidas casuais, descoberta de decks da comunidade e efeitos de cartas e apresentação das batalhas mais confiáveis.",
+    "es": "Retroceso en partidas casuales, descubrimiento de mazos de la comunidad y efectos de cartas y presentación de batallas más fiables.",
+    "it": "Ripristino nelle partite casuali, scoperta dei mazzi della community ed effetti delle carte e presentazione delle battaglie più affidabili."
+  },
+  "releases.1.25.0-beta.feature.rollback": {
+    "en": "Casual matches support returning to an earlier state with opponent consent, with rollback controls translated into all supported languages.",
+    "pt-BR": "Partidas casuais permitem voltar a um estado anterior com o consentimento do adversário, com controles de rollback traduzidos para todos os idiomas disponíveis.",
+    "es": "Las partidas casuales permiten volver a un estado anterior con el consentimiento del rival, con controles traducidos a todos los idiomas disponibles.",
+    "it": "Le partite casuali consentono di tornare a uno stato precedente con il consenso dell’avversario, con comandi tradotti in tutte le lingue disponibili."
+  },
+  "releases.1.25.0-beta.feature.decks": {
+    "en": "Random deck selection includes eligible community decks, and you can copy a deck after a match.",
+    "pt-BR": "A seleção aleatória inclui decks elegíveis da comunidade, e você pode copiar um deck depois da partida.",
+    "es": "La selección aleatoria incluye mazos aptos de la comunidad y permite copiar un mazo después de una partida.",
+    "it": "La selezione casuale include i mazzi idonei della community ed è possibile copiare un mazzo dopo una partita."
+  },
+  "releases.1.25.0-beta.fix.choices": {
+    "en": "Lillymon ST21-09 and similar effects keep their later attack optional after accepting the effect. Takato BT12-089 correctly uses the activating Tamer and eligible trash materials.",
+    "pt-BR": "Lillymon ST21-09 e efeitos semelhantes mantêm o ataque posterior opcional após aceitar o efeito. Takato BT12-089 usa corretamente o Tamer que ativou o efeito e os materiais elegíveis do lixo.",
+    "es": "Lillymon ST21-09 y efectos similares mantienen opcional el ataque posterior tras aceptar el efecto. Takato BT12-089 usa correctamente al Tamer activador y los materiales aptos de la basura.",
+    "it": "Lillymon ST21-09 ed effetti simili mantengono facoltativo l’attacco successivo dopo aver accettato l’effetto. Takato BT12-089 usa correttamente il Tamer attivante e i materiali idonei negli scarti."
+  },
+  "releases.1.25.0-beta.fix.engine": {
+    "en": "Corrected battle-prevention reaction timing, Progress DP immunity, Thetismon inherited effects, Dark Masters reactions and evolution after WaruMonzaemon security plays.",
+    "pt-BR": "Corrigidos o momento das reações de prevenção de batalha, a imunidade de DP de Progress, os efeitos herdados de Thetismon, as reações de Dark Masters e a digivolução após jogar WaruMonzaemon da segurança.",
+    "es": "Corregidos el orden de las reacciones de prevención de batalla, la inmunidad de DP de Progress, los efectos heredados de Thetismon, las reacciones de Dark Masters y la digievolución tras jugar a WaruMonzaemon desde seguridad.",
+    "it": "Corretti i tempi delle reazioni di prevenzione della battaglia, l’immunità DP di Progress, gli effetti ereditati di Thetismon, le reazioni dei Dark Masters e la digievoluzione dopo aver giocato WaruMonzaemon dalla sicurezza."
+  },
+  "releases.1.25.0-beta.fix.bot": {
+    "en": "Bots respect distinct-card requirements when choosing evolution sources, preventing rejected choices from stalling their turns.",
+    "pt-BR": "Bots respeitam a exigência de cartas distintas ao escolher fontes de digivolução, evitando que escolhas rejeitadas travem seus turnos.",
+    "es": "Los bots respetan los requisitos de cartas distintas al elegir fuentes de digievolución, evitando que elecciones rechazadas bloqueen sus turnos.",
+    "it": "I bot rispettano i requisiti di carte distinte nella scelta delle fonti di digievoluzione, evitando che scelte rifiutate blocchino i turni."
+  },
+  "releases.1.25.0-beta.fix.presentation": {
+    "en": "Improved effect announcements, recovery presentation and watcher checkpoints so pending animations and reactions resolve in the correct order.",
+    "pt-BR": "Melhorados os anúncios de efeitos, a apresentação de recuperação e os pontos de resolução de reações para respeitar a ordem das animações e efeitos pendentes.",
+    "es": "Mejorados los anuncios de efectos, la presentación de recuperación y los puntos de resolución de reacciones para respetar el orden de las animaciones y efectos pendientes.",
+    "it": "Migliorati gli annunci degli effetti, la presentazione del recupero e i punti di risoluzione delle reazioni per rispettare l’ordine delle animazioni e degli effetti in attesa."
+  },
+  "releases.1.25.0-beta.fix.access": {
+    "en": "Strengthened sign-in validation and bot-room access checks.",
+    "pt-BR": "Reforçadas as validações de login e de acesso às salas com bots.",
+    "es": "Reforzadas las validaciones de inicio de sesión y de acceso a salas con bots.",
+    "it": "Rafforzate le verifiche di accesso e di ingresso nelle stanze con bot."
+  },
   "releases.1.24.0-beta.summary": {
     "en": "Clearer staged effects and fixes for optional costs, card choices and action timing.",
     "pt-BR": "Efeitos por etapa mais claros e correções de custos opcionais, escolhas de cartas e ordem das ações.",

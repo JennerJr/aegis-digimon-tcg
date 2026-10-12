@@ -1,7 +1,7 @@
 import { openFixturePage } from "./scenario-page";
 import fixtureP240ArcturusmonOrderedPlacement from "../../api/src/engine/scenarios/p240-arcturusmon-ordered-placement.fixture";
 import { test, expect } from "@playwright/test";
-import { answerActivation } from "./scenario-page";
+import { answerActivation, ScenarioPage } from "./scenario-page";
 import { startBrowserServer } from "./server";
 
 for (const width of [1440, 390]) {
@@ -10,6 +10,7 @@ for (const width of [1440, 390]) {
   }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     const server = await startBrowserServer();
+    const evidence = new ScenarioPage(page);
     try {
       await page.addInitScript(() => {
         localStorage.setItem("aegis:locale", "en");
@@ -17,6 +18,7 @@ for (const width of [1440, 390]) {
       });
       await openFixturePage(page, fixtureP240ArcturusmonOrderedPlacement);
       await page.getByRole("button", { name: /^end breeding$/i }).click();
+      await expect(page.getByRole("button", { name: /^end turn$/i })).toBeEnabled();
       const card = page.getByTestId("hand").getByRole("button", { name: "Select Arcturusmon", exact: true });
       await card.focus();
       await card.press("Enter");
@@ -24,7 +26,8 @@ for (const width of [1440, 390]) {
       await page.getByRole("button", { name: "3 cards", exact: true }).click();
       const prompt = page.getByRole("dialog", { name: "Arcturusmon · effect", exact: true });
       await expect(prompt).toBeVisible();
-      await expect(prompt.locator(".decision-overlay__effect-text")).toHaveText(/^Then, by placing 2 cards/);
+      await expect(prompt.locator(".decision-overlay__effect-step")).toHaveText(/^Then, by placing 2 cards/);
+      await expect(prompt.locator(".decision-overlay__effect-text")).toContainText("De-Digivolve 3");
       const source = page
         .locator('[data-drop="perm-you"]')
         .filter({ has: page.getByRole("img", { name: "Arcturusmon", exact: true }) });
@@ -41,6 +44,8 @@ for (const width of [1440, 390]) {
       await expect(prompt).toBeHidden();
       await expect(source).not.toHaveClass(/game-permanent--effect-linked/);
     } finally {
+      await evidence.evidence(test.info());
+      await page.close();
       await server.close();
     }
   });

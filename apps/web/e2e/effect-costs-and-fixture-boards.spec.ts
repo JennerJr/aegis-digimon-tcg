@@ -222,7 +222,7 @@ test("renders arena card art when every mirror request fails", async ({ page }) 
   }
 });
 
-test("changing phases and resetting the arena survives translated Text nodes", async ({ page }) => {
+test("changing phases and reloading the fixture survives translated Text nodes", async ({ page }) => {
   const server = await startBrowserServer();
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -247,7 +247,7 @@ test("changing phases and resetting the arena survives translated Text nodes", a
     });
     await page.getByRole("button", { name: /end breeding/i }).click();
     await expect(page.getByRole("button", { name: /end turn/i })).toBeEnabled();
-    await page.getByRole("button", { name: /reset combat/i }).click();
+    await page.reload();
     await expect(page.getByRole("button", { name: /end breeding/i })).toBeVisible();
     expect(errors).toEqual([]);
   } finally {

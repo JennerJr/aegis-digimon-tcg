@@ -1,9 +1,11 @@
-import { CardKind, type DecisionRequest, type Intent, type ServerEvent } from "@aegis/shared";
-import { enumerateMainPhaseCandidates, digivolveCost, type Candidate } from "./candidates.js";
-import { appraiseBlock, bodyValue, scoreCandidate, shouldPayBarrier } from "./evaluate.js";
-import { DEFAULT_BOT_PROFILE, type BotProfile } from "./profiles.js";
-import { createBotRandom, type BotRandom } from "./rng.js";
-import { isDigimonCard, type BotUnit, type BotView } from "./view.js";
+import { CardKind } from "@aegis/shared/schema/enums";
+import type { DecisionRequest, ServerEvent } from "@aegis/shared/protocol/events";
+import type { Intent } from "@aegis/shared/protocol/intents";
+import { enumerateMainPhaseCandidates, digivolveCost, type Candidate } from "#api/bot/candidates";
+import { appraiseBlock, bodyValue, scoreCandidate, shouldPayBarrier } from "#api/bot/evaluate";
+import { DEFAULT_BOT_PROFILE, type BotProfile } from "#api/bot/profiles";
+import { createBotRandom, type BotRandom } from "#api/bot/rng";
+import { isDigimonCard, type BotUnit, type BotView } from "#api/bot/view";
 
 /**
  * The decision surface `BotPlayer` drives.
@@ -308,7 +310,21 @@ function pickInstances(view: BotView | undefined, request: DecisionRequest): str
   const ownUnits = indexUnits(view.breeding === undefined ? view.board : [...view.board, view.breeding]);
   const ownHand = new Map(view.hand.map((card) => [card.instanceId, card]));
 
-  const ranked = [...candidates].sort((left, right) => rank(right) - rank(left));
+  const visibleCardIds = new Map((request.options?.visibleCards ?? []).map((card) => [card.instanceId, card.cardId]));
+  const selectedCardIds = new Set<string>();
+  const ranked = [...candidates]
+    .sort((left, right) => rank(right) - rank(left))
+    .filter((instanceId) => {
+      if (!request.options?.distinctCardIds) return true;
+      const cardId =
+        visibleCardIds.get(instanceId) ??
+        ownHand.get(instanceId)?.cardId ??
+        ownUnits.get(instanceId)?.cardId ??
+        opponentUnits.get(instanceId)?.cardId;
+      if (cardId === undefined || selectedCardIds.has(cardId)) return false;
+      selectedCardIds.add(cardId);
+      return true;
+    });
 
   if (min > 0) return ranked.slice(0, min);
   // The bot already accepted this "you may" clause; its pick floor of zero only exists so a

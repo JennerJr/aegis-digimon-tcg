@@ -27,6 +27,7 @@ function mountHand() {
   }
   const send = vi.fn<(type: string, payload: unknown) => void>();
   const room = {
+    state,
     connection: { isOpen: true },
     send: (type: string, payload: unknown) => (type === ANIMATION_SPEED_CHANNEL ? undefined : send(type, payload)),
     onMessage: () => () => {},

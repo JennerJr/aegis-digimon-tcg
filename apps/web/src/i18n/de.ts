@@ -3,6 +3,26 @@ import { en } from "@/i18n/en";
 
 const interfaceMessages = {
   ...forumEn,
+  "rollback.failed":
+    "Dieser Zeitpunkt konnte nicht sicher wiederhergestellt werden. Das aktuelle Spiel wurde beibehalten.",
+  "rollback.cancel": "Anfrage abbrechen",
+  "rollback.allow": "Zurücksetzen erlauben",
+  "rollback.help": "So funktioniert es",
+  "rollback.optionHint":
+    "Mit dem Zurücksetzen kannst du die letzte Aktion rückgängig machen oder zum Beginn eines Zuges zurückkehren. Karten, Memory und Spielzustand werden wiederhergestellt.",
+  "rollback.controls": "Zurücksetzen",
+  "rollback.undo": "Letzte Aktion rückgängig machen",
+  "rollback.turn": "Zum Zugbeginn zurückkehren",
+  "rollback.turnHint":
+    "Stellt den aktuellen Zug vor den Effekten zu Zugbeginn, dem Reaktivieren und dem Ziehen wieder her. Wenn noch keine Aktion ausgeführt wurde, wird der Beginn des vorherigen Zuges wiederhergestellt. Beendete Spiele können nicht zurückgesetzt werden.",
+  "rollback.hiddenHint":
+    "Bereits gesehene Karten können nicht vergessen werden. Stimme das Zurücksetzen mit deinem Gegner ab.",
+  "rollback.waiting": "Warte auf die Zustimmung des Gegners. Das Spiel ist pausiert.",
+  "rollback.requestAction": "Der Gegner möchte die letzte Aktion rückgängig machen.",
+  "rollback.requestTurn": "Der Gegner möchte zum Zugbeginn zurückkehren.",
+  "rollback.accept": "Zustimmen",
+  "rollback.reject": "Ablehnen",
+  "rollback.restoring": "Spiel wird wiederhergestellt…",
   "profile.matches": "Streichhölzer",
   "profile.guestHint":
     "Ihr Name und Ihr Avatar werden nur auf diesem Gerät gespeichert. Melden Sie sich an, um den Spielverlauf und Wiederholungen zu speichern.",
@@ -588,6 +608,11 @@ const interfaceMessages = {
   "lobby.randomAction": "Überrasche mich",
   "lobby.randomSelected": "Geheimnis ausgewählt",
   "lobby.randomDeckHint": "Ihr Deck wird zu Beginn des Spiels aufgedeckt.",
+  "lobby.randomCommunityPool": "Eigene, bekannte und öffentliche Community-Decks",
+  "lobby.randomFailed": "Das Deck konnte nicht ausgelost werden. Versuche es erneut.",
+  "lobby.randomDrawing": "Deck wird ausgelost…",
+  "overlay.viewUsedDeck": "Gespieltes Deck ansehen",
+  "overlay.usedDeck": "In diesem Duell gespieltes Deck",
   "lobby.randomPool": "{count} legale Decks im Pool",
   "lobby.randomPoolOne": "1 legales Deck im Pool",
   "lobby.randomPoolLabel": "Mystery-Pool",

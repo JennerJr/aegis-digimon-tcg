@@ -9,7 +9,7 @@ import { test, expect, type DecisionPolicy } from "./scenario-page";
 test.use({ holdBotAfterTurn: 2 });
 
 const MATERIALS = ["BT26-001", "BT24-034", "BT26-009", "BT26-015", "BT26-016"];
-const SOURCE_IDS = MATERIALS.map((_, i) => `feedback79-material-${i}`);
+const SOURCE_IDS = MATERIALS.map((_, i) => fixtureInstanceId(`feedback79-material-${i}`));
 const OMNI = fixturePermanentId("dev-perm-1-feedback79-omni");
 
 for (const mode of ["accept", "decline", "ordinary"] as const) {
@@ -40,7 +40,7 @@ for (const mode of ["accept", "decline", "ordinary"] as const) {
         if (prevention && decision.sourceCardId === "BT26-016") {
           holyOffers++;
           expect(decision.sourceInstanceId).toBe(fixtureInstanceId("feedback79-material-4"));
-          return { accept: mode === "accept" };
+          return { accept: mode === "accept", decisionBudgetMs: 8_000 };
         }
         return { accept: decision.sourceCardId === "BT26-078" || decision.sourceCardId === "BT26-085" };
       }

@@ -21,7 +21,7 @@ for (const accept of [true, false]) {
         if (decision.kind !== "optional") return {};
         if (decision.sourceCardId === "BT26-016" && /prevent leaving/i.test(decision.promptText)) {
           preventionChoices++;
-          return { accept };
+          return { accept, decisionBudgetMs: 8_000 };
         }
         return { accept: false };
       },

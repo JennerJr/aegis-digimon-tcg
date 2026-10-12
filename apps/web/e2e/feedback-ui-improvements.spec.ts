@@ -23,6 +23,7 @@ test("the toolbar holds still, the opponent's card stays open, and the feedback 
   await scenario.openFixture(fixtureDrasilTurnHandoff, "normal", "none");
 
   await test.step("#53: no toolbar button moves while animations come and go", async () => {
+    await expect(page.getByRole("button", { name: "Send feedback", exact: true })).toBeVisible();
     await page.evaluate(() => {
       const samples: NonNullable<Window["toolbarSamples"]> = [];
       window.toolbarSamples = samples;

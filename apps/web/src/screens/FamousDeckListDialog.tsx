@@ -65,13 +65,17 @@ export function FamousDeckListDialog({
   onUse,
   onCopy,
   onClose,
+  eyebrow,
+  copied = false,
 }: {
   deck: DeckListing;
   collection: string;
   active: boolean;
-  onUse: () => void;
+  onUse?: () => void;
   onCopy: () => void;
   onClose: () => void;
+  eyebrow?: string;
+  copied?: boolean;
 }) {
   const { t } = useTranslation();
   const sections = deckSections(deck, t);
@@ -81,7 +85,7 @@ export function FamousDeckListDialog({
     <Dialog className="famous-deck-dialog" labelledBy="famous-deck-dialog-title" onClose={onClose}>
       <header className="famous-deck-dialog__header">
         <div>
-          <Eyebrow>{t("lobby.famousDeckEyebrow")}</Eyebrow>
+          <Eyebrow>{eyebrow ?? t("lobby.famousDeckEyebrow")}</Eyebrow>
           <h2 id="famous-deck-dialog-title" className="famous-deck-dialog__title">
             {deck.name}
             <span className="famous-deck-dialog__collection">{collection}</span>
@@ -130,12 +134,14 @@ export function FamousDeckListDialog({
           className="famous-deck-dialog__export"
           label={t("deck.exportPng")}
         />
-        <Button variant="secondary" icon={Icons.FileText} onClick={onCopy}>
-          {t("lobby.copyPreset")}
+        <Button variant="secondary" icon={Icons.FileText} onClick={onCopy} disabled={copied}>
+          {copied ? t("common.copied") : t("lobby.copyPreset")}
         </Button>
-        <Button icon={active ? Icons.Check : Icons.Swords} disabled={active} onClick={onUse}>
-          {active ? t("deck.active") : t("lobby.useDeck")}
-        </Button>
+        {onUse ? (
+          <Button icon={active ? Icons.Check : Icons.Swords} disabled={active} onClick={onUse}>
+            {active ? t("deck.active") : t("lobby.useDeck")}
+          </Button>
+        ) : null}
       </footer>
       {inspectedCardId ? <CardLightbox cardId={inspectedCardId} onClose={() => setInspectedCardId(null)} /> : null}
     </Dialog>

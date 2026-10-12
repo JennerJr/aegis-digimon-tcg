@@ -1,9 +1,15 @@
+import type { CommunityRandomResult } from "@aegis/shared/decks/CommunityRandomResult";
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../i18n";
 import { Lobby, deckHasBetaCards, randomDeckPool } from "./Lobby";
 import { DECKS, selectableDecks } from "../game/decks";
+
+const randomCommunityDeck = vi.hoisted(() =>
+  vi.fn<(...args: unknown[]) => Promise<CommunityRandomResult>>(async () => ({ deck: null, eligibleCount: 0 })),
+);
+vi.mock("@/community/client", () => ({ communityApi: { randomDeck: randomCommunityDeck } }));
 
 const lookupPrivateRoom = vi.hoisted(() =>
   vi.fn<() => Promise<{ roomId: string; unlimited: boolean; format?: import("@aegis/shared").DeckFormat }>>(
@@ -25,6 +31,7 @@ function renderConfiguredLobby(...args: Parameters<typeof render>) {
 
 // EX13 is the beta fixture, so the clock stays before its 2026-10-02 release.
 beforeEach(() => {
+  randomCommunityDeck.mockResolvedValue({ deck: null, eligibleCount: 0 });
   lookupPrivateRoom.mockResolvedValue({ roomId: "private-room", unlimited: false });
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-09-15T12:00:00.000Z"));
@@ -86,7 +93,7 @@ describe("famous deck selection", () => {
     expect(screen.getByRole("combobox", { name: "Rules" })).toHaveProperty("value", "standard");
     expect(screen.getByRole("button", { name: "Enter queue" })).toHaveProperty("disabled", true);
   });
-  it("GitHub #5236: a personal beta bot deck routes random human practice through the beta room", () => {
+  it("GitHub #5236: a personal beta bot deck routes random human practice through the beta room", async () => {
     const onStart = vi.fn();
     const human = { ...DECKS[0]!, id: "human", name: "Human" };
     const bot = { ...human, id: "personal-bot", name: "Personal beta bot", mainDeck: [...human.mainDeck] };
@@ -109,7 +116,9 @@ describe("famous deck selection", () => {
     fireEvent.click(screen.getByRole("button", { name: /Surprise me/ }));
     fireEvent.click(screen.getByRole("button", { name: "Play vs Bot" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
-    expect(onStart.mock.calls[0]?.slice(0, 4)).toEqual(["bot", undefined, "mine:personal-bot", true]);
+    await waitFor(() =>
+      expect(onStart.mock.calls[0]?.slice(0, 4)).toEqual(["bot", undefined, "mine:personal-bot", true]),
+    );
   });
   it("translates automatic beta confirmation into Portuguese and confirms the human queue", () => {
     localStorage.setItem("aegis:locale", "pt-BR");
@@ -194,7 +203,7 @@ describe("famous deck selection", () => {
     expect(onStart).toHaveBeenCalled();
   });
 
-  it("keeps a random choice hidden and passes a legal deck only when starting", () => {
+  it("keeps a random choice hidden and passes a legal deck only when starting", async () => {
     const onStart = vi.fn();
     renderConfiguredLobby(
       <I18nProvider>
@@ -217,7 +226,7 @@ describe("famous deck selection", () => {
     expect(screen.queryByText(/Randomly selected/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Enter queue" }));
 
-    expect(onStart).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onStart).toHaveBeenCalledTimes(1));
     const [startMode, code, botDeckId, betaBattleMode, deckId] = onStart.mock.calls[0]!;
     const drawn = selectableDecks(DECKS).find((deck) => deck.id === deckId);
     expect(drawn).toBeDefined();
@@ -334,7 +343,7 @@ describe("famous deck selection", () => {
     expect(screen.queryByRole("checkbox", { name: /Play in the beta queue/ })).toBeNull();
   });
 
-  it("routes every mystery draw to the beta queue once the player opts in", () => {
+  it("routes every mystery draw to the beta queue once the player opts in", async () => {
     const onStart = vi.fn();
     renderConfiguredLobby(
       <I18nProvider>
@@ -354,7 +363,7 @@ describe("famous deck selection", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /Play in the beta queue/ }));
     fireEvent.click(screen.getByRole("button", { name: "Enter beta queue" }));
 
-    expect(onStart).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onStart).toHaveBeenCalledTimes(1));
     const [startMode, , , betaBattleMode] = onStart.mock.calls[0]!;
     expect([startMode, betaBattleMode]).toEqual(["beta", true]);
   });
@@ -1103,4 +1112,106 @@ describe("the advanced settings toggle", () => {
     expect(summary.textContent).toContain("Advanced settings");
     expect(summary.textContent).toContain("Card pool, rules, best-of, timer and more");
   });
+});
+
+describe("community mystery deck selection", () => {
+  function renderMystery() {
+    const onStart = vi.fn<(...args: unknown[]) => void>();
+    renderConfiguredLobby(
+      <I18nProvider>
+        <Lobby
+          player={{ name: "Tamer", color: "Blue", shards: 0 }}
+          decks={DECKS}
+          activeDeckId={DECKS[0]!.id}
+          onSelectDeck={() => undefined}
+          onCopyDeck={() => undefined}
+          onNav={() => undefined}
+          onStart={onStart}
+        />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Surprise me" }));
+    return onStart;
+  }
+  it("starts with the full community deck without requiring a borrowed or saved listing", async () => {
+    const personal = DECKS[0]!;
+    const deck = {
+      id: "public-random",
+      name: "Community Winner",
+      author: { id: "author", displayName: "Deck Author" },
+      colors: ["Red"],
+      coverCardId: null,
+      likeCount: 0,
+      copyCount: 0,
+      likedByMe: false,
+      legal: true,
+      publishedAt: 1,
+      updatedAt: 1,
+      status: "public" as const,
+      mainDeck: [...personal.mainDeck],
+      eggDeck: [...personal.eggDeck],
+      mainDeckArts: [...personal.mainDeck],
+      eggDeckArts: [...personal.eggDeck],
+    };
+    randomCommunityDeck.mockResolvedValueOnce({ deck, eligibleCount: 200 });
+    const random = vi.spyOn(Math, "random").mockReturnValue(0);
+    try {
+      const onStart = renderMystery();
+      fireEvent.click(screen.getByRole("button", { name: "Enter queue" }));
+      await waitFor(() => expect(onStart).toHaveBeenCalledTimes(1));
+      expect(onStart.mock.calls[0]![4]).toMatchObject({
+        id: "community-public-random",
+        mainDeck: deck.mainDeck,
+        eggDeck: deck.eggDeck,
+        community: { id: deck.id, author: deck.author },
+      });
+      expect(randomCommunityDeck).toHaveBeenLastCalledWith({ format: "standard", betaAllowed: true });
+    } finally {
+      random.mockRestore();
+    }
+  });
+  it("blocks duplicate starts and reports selection failure without silently excluding community decks", async () => {
+    let rejectDraw: (reason: Error) => void = () => undefined;
+    randomCommunityDeck.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectDraw = reject;
+      }),
+    );
+    const onStart = renderMystery();
+    fireEvent.click(screen.getByRole("button", { name: "Enter queue" }));
+    expect(screen.getByRole("button", { name: "Enter queue" })).toHaveProperty("disabled", true);
+    expect(screen.getByText("Drawing a deck…").getAttribute("role")).toBe("status");
+    await act(async () => rejectDraw(new Error("Unavailable")));
+    expect(screen.getByText("Could not draw a deck. Try again.")).toBeTruthy();
+    expect(onStart).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Enter queue" })).toHaveProperty("disabled", false);
+  });
+});
+
+it("does not launch a delayed mystery draw after leaving the lobby", async () => {
+  let finish: (result: CommunityRandomResult) => void = () => undefined;
+  randomCommunityDeck.mockReturnValueOnce(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const onStart = vi.fn<(...args: unknown[]) => void>();
+  const view = renderConfiguredLobby(
+    <I18nProvider>
+      <Lobby
+        player={{ name: "Tamer", color: "Blue", shards: 0 }}
+        decks={DECKS}
+        activeDeckId={DECKS[0]!.id}
+        onSelectDeck={() => undefined}
+        onCopyDeck={() => undefined}
+        onNav={() => undefined}
+        onStart={onStart}
+      />
+    </I18nProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Surprise me" }));
+  fireEvent.click(screen.getByRole("button", { name: "Enter queue" }));
+  view.unmount();
+  await act(async () => finish({ deck: null, eligibleCount: 0 }));
+  expect(onStart).not.toHaveBeenCalled();
 });

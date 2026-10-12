@@ -90,6 +90,7 @@ function placeBar(bar: HTMLElement): BarPlacement | undefined {
 export function GameOverOverlay({
   spectatorResult,
   onDownloadReplay,
+  onViewUsedDeck,
   replayFile,
   replayStatus,
   signedIn,
@@ -103,6 +104,7 @@ export function GameOverOverlay({
   series,
 }: ReplaySaveProps & {
   spectatorResult?: string;
+  onViewUsedDeck?: () => void;
   result: GameOverOutcome;
   reason: string;
   stats: { value: number | string; label: string }[];
@@ -215,6 +217,11 @@ export function GameOverOverlay({
             </Button>
           </div>
         )}
+        {onViewUsedDeck ? (
+          <Button className="game-result__used-deck" variant="secondary" icon={Icons.FileText} onClick={onViewUsedDeck}>
+            {t("overlay.viewUsedDeck")}
+          </Button>
+        ) : null}
         <ReplaySavePrompt
           onDownloadReplay={onDownloadReplay}
           replayFile={replayFile}

@@ -3,7 +3,7 @@
 Aegis persists application data in PostgreSQL. This filename names the inventory;
 it does not imply a MongoDB collection layer. The API owns every query and write.
 The authoritative schema is the ordered [migration registry](apps/api/src/db/migrations/index.ts),
-currently migrations 001–031, plus the migrator's `schema_migrations` table.
+currently migrations 001–032, plus the migrator's `schema_migrations` table.
 Append migrations for released schema changes and update this inventory with them.
 
 Tables below list their identity, important fields, and constraints. Foreign keys,
@@ -15,19 +15,20 @@ linked migrations and domain owners; this document is not an executable schema.
 Owner: [AccountStore](apps/api/src/accounts/AccountStore.ts).
 Base schema: [001](apps/api/src/db/migrations/001-initial-schema.ts).
 
-| Table                  | Identity and important fields                                                          | Constraints and later schema                                                                                                                                                                            |
-| ---------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `accounts`             | UUID `id`; display name, avatar, creation time                                         | Unique case-insensitive display name. Migrations 012–014 add avatar ID, admin flag, and display-name change time; 017 adds JSON preferences; 023 adds avatar check time; 026 adds confirmed bug points. |
-| `login_identities`     | `(provider, subject)`; account FK                                                      | A provider identity belongs to one account.                                                                                                                                                             |
-| `sessions`             | Text `id`; account FK, expiry, revocation                                              | Server authentication state; never expose session identifiers in documentation or logs.                                                                                                                 |
-| `magic_links`          | `token_hash`; email, expiry, consumption                                               | One-use login tokens stored as hashes.                                                                                                                                                                  |
-| `saved_decks`          | `(account_id, id)`; name, main/egg JSON decks, revision, update time                   | Migrations 015–016 add alternate art arrays and cover card; 020–021 add sleeves; 025 adds deck format.                                                                                                  |
-| `match_records`        | UUID `id`; unique `room_id`, mode, players, winner, finish reason/time                 | Competitive matches. Migration 008 allows a missing second account for bots and adds opponent kind/name and explicit seat outcome.                                                                      |
-| `player_stats`         | Account FK as PK; ranked/tournament counters                                           | Persistent totals per account.                                                                                                                                                                          |
-| `ranked_dodge_records` | `(room_id, account_id)`; creation time                                                 | Idempotent dodge recording.                                                                                                                                                                             |
-| `match_deck_snapshots` | `(match_id, account_id)`; snapshot ID, deck identity and frozen JSON decklists, result | Match/account FKs; result restricted to win/loss/draw.                                                                                                                                                  |
-| `room_tickets`         | `token_hash`; account/match FKs, expiry, consumption                                   | One-use room authorization stored as a hash.                                                                                                                                                            |
-| `email_daily_usage`    | `(provider, day)`; sent count                                                          | Provider quotas; [018](apps/api/src/db/migrations/018-email-daily-usage.ts).                                                                                                                            |
+| Table                       | Identity and important fields                                                          | Constraints and later schema                                                                                                                                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `accounts`                  | UUID `id`; display name, avatar, creation time                                         | Unique case-insensitive display name. Migrations 012–014 add avatar ID, admin flag, and display-name change time; 017 adds JSON preferences; 023 adds avatar check time; 026 adds confirmed bug points.                                     |
+| `login_identities`          | `(provider, subject)`; account FK                                                      | A provider identity belongs to one account.                                                                                                                                                                                                 |
+| `sessions`                  | Text `id`; account FK, expiry, revocation                                              | Server authentication state; never expose session identifiers in documentation or logs.                                                                                                                                                     |
+| `magic_links`               | `token_hash`; email, expiry, consumption                                               | One-use login tokens stored as hashes.                                                                                                                                                                                                      |
+| `magic_link_request_limits` | Hashed IP/destination key; window start, attempt count                                 | [032](apps/api/src/db/migrations/032-magic-link-request-limits.ts); atomic limits shared by API processes. Window index supports expiry cleanup; 032 also indexes magic link expiry. [AccountStore](apps/api/src/accounts/AccountStore.ts). |
+| `saved_decks`               | `(account_id, id)`; name, main/egg JSON decks, revision, update time                   | Migrations 015–016 add alternate art arrays and cover card; 020–021 add sleeves; 025 adds deck format.                                                                                                                                      |
+| `match_records`             | UUID `id`; unique `room_id`, mode, players, winner, finish reason/time                 | Competitive matches. Migration 008 allows a missing second account for bots and adds opponent kind/name and explicit seat outcome.                                                                                                          |
+| `player_stats`              | Account FK as PK; ranked/tournament counters                                           | Persistent totals per account.                                                                                                                                                                                                              |
+| `ranked_dodge_records`      | `(room_id, account_id)`; creation time                                                 | Idempotent dodge recording.                                                                                                                                                                                                                 |
+| `match_deck_snapshots`      | `(match_id, account_id)`; snapshot ID, deck identity and frozen JSON decklists, result | Match/account FKs; result restricted to win/loss/draw.                                                                                                                                                                                      |
+| `room_tickets`              | `token_hash`; account/match FKs, expiry, consumption                                   | One-use room authorization stored as a hash.                                                                                                                                                                                                |
+| `email_daily_usage`         | `(provider, day)`; sent count                                                          | Provider quotas; [018](apps/api/src/db/migrations/018-email-daily-usage.ts).                                                                                                                                                                |
 
 ## Tournament program
 
@@ -76,12 +77,14 @@ and [tournament domain](apps/api/src/tournaments/).
 ## Explicit indexes
 
 Primary keys and UNIQUE constraints also create indexes. The following are the
-additional explicitly named indexes in migrations 001–031; refer to their source
+additional explicitly named indexes in migrations 001–032; refer to their source
 for sort direction and predicates.
 
 | Table                            | Index name and columns                                                                                                                                                       |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `accounts`                       | `accounts_display_name_unique`: unique `lower(display_name)`                                                                                                                 |
+| `magic_links`                    | `magic_links_expiry_idx`: `(expires_at)`                                                                                                                                     |
+| `magic_link_request_limits`      | `magic_link_request_limits_window_idx`: `(window_started_at)`                                                                                                                |
 | `saved_decks`                    | `saved_decks_account`: `(account_id, updated_at DESC)`                                                                                                                       |
 | `match_records`                  | `match_records_players`: `(player0_account_id, player1_account_id, finished_at DESC)`                                                                                        |
 | `match_deck_snapshots`           | `match_deck_snapshots_account`: `(account_id, snapshot_id)`                                                                                                                  |
@@ -112,7 +115,10 @@ for sort direction and predicates.
 Colyseus rooms and the game engine hold live match state in one API process; it is
 not a durable match database. Redis supports multiprocess coordination/presence
 when configured. Card catalogs, effect snapshots, and the rules KB are repository
-data, not PostgreSQL tables.
+data, not PostgreSQL tables. Rollback input journals and private-state
+fingerprints exist only inside an eligible live room and disappear with it.
+Casual-series continuation records in presence/Redis retain the optional
+`allowRollback` setting; this introduces no PostgreSQL table or migration.
 
 Player replay files live in the player's Google Drive; `account_replays` stores
 their index and sharing metadata. Report replays store the private action record

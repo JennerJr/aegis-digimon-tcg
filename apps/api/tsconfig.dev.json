@@ -1,26 +1,12 @@
 {
-  // Dev-only program: the build that feeds `pnpm dev` never runs tests, so the
-  // ~470k lines of *.test.ts (over half of src) and their test-only support modules
-  // are dropped here. Anything product code actually imports is still pulled into the
-  // program by the module graph, so this only removes dead weight from the dev build.
-  // `pnpm typecheck` / `pnpm test` still use tsconfig.json and see everything.
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    // Rechecking direct dependents instead of the full transitive closure is what keeps
-    // incremental rebuilds fast in a project this size. A stale error can survive one
-    // rebuild; `pnpm typecheck` (full program) is the gate.
     "assumeChangesOnlyAffectDirectDependencies": true,
-    // Separate from tsconfig.json's buildinfo so the dev program and `pnpm typecheck`
-    // (different file sets) do not invalidate each other's incremental state.
     "tsBuildInfoFile": "./dist/.tsbuildinfo.dev"
   },
-  // `references` is not inherited through `extends`, so it is repeated here.
-  "references": [{ "path": "../../packages/shared" }],
-  "exclude": [
-    "src/**/*.test.ts",
-    "src/**/*.fixture.ts",
-    "src/engine/testkit/**",
-    "src/engine/conformance/**",
-    "src/bot/matchHarness.ts"
+  "references": [
+    {
+      "path": "../../packages/shared"
+    }
   ]
 }

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setupEngine, settle } from "@aegis-api/engine/testkit/harness.js";
 import "@aegis-api/cards/BT20/BT20-102.js";
 import { I18nProvider } from "../src/i18n";
-import { saveLocale } from "../src/i18n/locales";
+import { saveLocale } from "@/i18n/saveLocale";
 import { ArenaPermanentInspector } from "../src/game/ArenaPermanentInspector";
 import { buildPermanentDetail } from "../src/game/permanentDetail";
 import { Side } from "../src/game/side";

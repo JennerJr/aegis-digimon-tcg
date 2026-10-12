@@ -6,7 +6,7 @@
 - Every exported helper must have its own file, named after the helper. Only helpers private to their owning module may stay in that module.
 - Do not create `index` files or barrels. Import the owning file directly through configured aliases: `@/` in the web app, `#api/` in the API, `#shared/` inside shared, and `@aegis/shared/<domain>/<file>` across workspaces.
 - Organize source by domain and responsibility, colocate tests, types, enums, and helpers, and avoid generic helper/utility dumping grounds. Preserve the workspace, card-set, and scenario paths used by tooling.
-- Apply [coding-style](.agents/skills/coding-style/SKILL.md) to application changes and [enums](.agents/skills/enums/SKILL.md) to fixed domain values. Preserve serialized values and numeric engine enum ordering.
+- Apply [coding-style](.agents/skills/coding-style/SKILL.md) to application changes and [enums](.agents/skills/enums/SKILL.md) to fixed domain values. Preserve serialized values and numeric engine enum ordering. Read [coding preferences](internal-docs/ai/coding-preferences.md) when changing application code.
 - Run [quality-gate](.agents/skills/quality-gate/SKILL.md), relevant tests, and `git diff --check`; report failures and coverage limits. Build changed shared contracts before focused tests.
 - Keep these instructions canonical. `CLAUDE.md` is only a pointer. Follow [agent-file-convention](.agents/skills/agent-file-convention/SKILL.md) for instruction changes and update [COLLECTIONS.md](COLLECTIONS.md) with persistence schema changes.
 - Start with `pnpm dev`; restart after API changes because the API runs compiled code without source watching. See [development commands](internal-docs/ai/development.md) and [architecture map](internal-docs/ai/architecture-map.md).

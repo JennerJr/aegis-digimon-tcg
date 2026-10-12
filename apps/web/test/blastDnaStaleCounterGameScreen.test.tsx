@@ -103,7 +103,12 @@ it("GH5346 replaces the accepted Blast DNA counter with Omnimon targets despite 
   expect(windows().counterWindow).toBeNull();
 
   const send = vi.fn<(type: string, payload: unknown) => void>();
-  const room = { connection: { isOpen: true }, send, onMessage: () => () => {} } as unknown as AegisRoom;
+  const room = {
+    state: s.state,
+    connection: { isOpen: true },
+    send,
+    onMessage: () => () => {},
+  } as unknown as AegisRoom;
   render(
     <GameScreen
       joinOptions={{ displayName: "dentineice", deck: { mainDeck: [], eggDeck: [] } }}
@@ -129,6 +134,7 @@ it("GH5346 replaces the accepted Blast DNA counter with Omnimon targets despite 
   fireEvent.click(target, { detail: 1 });
   fireEvent.click(screen.getByRole("button", { name: /^Confirm/i }));
   expect(send).toHaveBeenCalledWith("respondDecision", {
+    rollbackRevision: 0,
     decisionId: decision.decisionId,
     response: { kind: "chooseTargets", instanceIds: [s.perm("attacker").permanentId] },
   });

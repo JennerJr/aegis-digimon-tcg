@@ -48,7 +48,7 @@ export class MatchClock {
   private bonusGranted: [number, number] = [0, 0];
 
   constructor(
-    private readonly state: GameState,
+    private state: GameState,
     options: Partial<MatchTimerOptions>,
     privateRoom: boolean,
     now: number,
@@ -63,6 +63,18 @@ export class MatchClock {
   }
 
   /** Charge the previous owner before changing turns/owners or accepting a late answer. */
+  rebindAfterRollback(state: GameState, previous: GameState, now: number): void {
+    state.matchTimer = previous.matchTimer;
+    state.timerStartSeconds = previous.timerStartSeconds;
+    state.timerRefillSeconds = previous.timerRefillSeconds;
+    this.state = state;
+    this.presentEnd = [0, 0];
+    this.running = undefined;
+    this.lastTime = now;
+    this.lastTurn = state.turnCount;
+    this.publish();
+  }
+
   update(now: number, inputSeat: Seat | undefined, mode: ClockMode = "match"): ClockExpiry | undefined {
     if (!this.state.matchTimer || this.state.gameOver) {
       this.running = undefined;

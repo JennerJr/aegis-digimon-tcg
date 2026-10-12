@@ -3,6 +3,25 @@ import { en } from "@/i18n/en";
 
 const interfaceMessages = {
   ...forumEn,
+  "rollback.failed": "Impossible de restaurer ce point en toute sécurité. La partie actuelle a été conservée.",
+  "rollback.cancel": "Annuler la demande",
+  "rollback.allow": "Autoriser le retour en arrière",
+  "rollback.help": "Comment ça fonctionne",
+  "rollback.optionHint":
+    "Le retour en arrière permet d’annuler la dernière action ou de revenir au début d’un tour, en restaurant les cartes, la mémoire et l’état de la partie.",
+  "rollback.controls": "Retour en arrière",
+  "rollback.undo": "Annuler la dernière action",
+  "rollback.turn": "Revenir au début du tour",
+  "rollback.turnHint":
+    "Restaure le tour actuel avant les effets de début, la réactivation et la pioche. Si aucune action n’a encore été effectuée, restaure le début du tour précédent. Les parties terminées ne peuvent pas être restaurées.",
+  "rollback.hiddenHint":
+    "Les cartes déjà vues ne peuvent pas être oubliées. Mettez-vous d’accord avec votre adversaire avant de revenir en arrière.",
+  "rollback.waiting": "En attente de l’accord de l’adversaire. La partie est en pause.",
+  "rollback.requestAction": "L’adversaire demande à annuler la dernière action.",
+  "rollback.requestTurn": "L’adversaire demande à revenir au début du tour.",
+  "rollback.accept": "Accepter",
+  "rollback.reject": "Refuser",
+  "rollback.restoring": "Restauration de la partie…",
   "profile.matches": "Matchs",
   "profile.guestHint":
     "Votre nom et votre avatar sont enregistrés uniquement sur cet appareil. Connectez-vous pour conserver l'historique des matchs et les rediffusions.",
@@ -582,6 +601,11 @@ const interfaceMessages = {
   "lobby.randomAction": "Surprenez-moi",
   "lobby.randomSelected": "Mystère sélectionné",
   "lobby.randomDeckHint": "Votre deck est révélé lorsque le match commence.",
+  "lobby.randomCommunityPool": "Decks personnels, célèbres et publics de la communauté",
+  "lobby.randomFailed": "Impossible de tirer un deck. Réessayez.",
+  "lobby.randomDrawing": "Tirage du deck…",
+  "overlay.viewUsedDeck": "Voir le deck utilisé",
+  "overlay.usedDeck": "Deck utilisé dans ce duel",
   "lobby.randomPool": "{count} decks légaux dans le pool",
   "lobby.randomPoolOne": "1 terrasse légale dans la piscine",
   "lobby.randomPoolLabel": "Piscine mystère",

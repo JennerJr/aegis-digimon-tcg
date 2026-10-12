@@ -9,6 +9,25 @@ import { en } from "./en";
 // messages are translated; printed card names and effects remain in English.
 const interfaceMessages = {
   ...forumEn,
+  "rollback.failed": "Impossibile ripristinare questo punto in sicurezza. La partita attuale è stata mantenuta.",
+  "rollback.cancel": "Annulla richiesta",
+  "rollback.allow": "Consenti di annullare le mosse",
+  "rollback.help": "Come funziona",
+  "rollback.optionHint":
+    "Annullare le mosse permette di annullare l’ultima azione o tornare all’inizio di un turno, ripristinando carte, memoria e stato della partita.",
+  "rollback.controls": "Annulla mosse",
+  "rollback.undo": "Annulla ultima azione",
+  "rollback.turn": "Torna all'inizio del turno",
+  "rollback.turnHint":
+    "Ripristina il turno corrente prima degli effetti iniziali, della riattivazione e della pesca. Se non è stata eseguita alcuna azione, ripristina l'inizio del turno precedente. Le partite concluse non possono essere ripristinate.",
+  "rollback.hiddenHint": "Le carte già viste non possono essere dimenticate. Concorda il ripristino con il rivale.",
+  "rollback.waiting": "In attesa dell'approvazione del rivale. Le azioni sono sospese.",
+  "rollback.requestAction": "Il rivale chiede di annullare l'ultima azione.",
+  "rollback.requestTurn": "Il rivale chiede di tornare all'inizio del turno.",
+  "rollback.accept": "Accetta",
+  "rollback.reject": "Rifiuta",
+  "rollback.restoring": "Ripristino della partita…",
+
   ...profileReplayIt,
   ...replayIt,
   ...replayVideoIt,
@@ -413,6 +432,11 @@ const interfaceMessages = {
   "lobby.randomAction": "Sorprendimi",
   "lobby.randomSelected": "Mazzo misterioso selezionato",
   "lobby.randomDeckHint": "Il tuo mazzo verrà rivelato all'inizio della partita.",
+  "lobby.randomCommunityPool": "Mazzi personali, famosi e pubblici della community",
+  "lobby.randomFailed": "Impossibile estrarre un mazzo. Riprova.",
+  "lobby.randomDrawing": "Estrazione del mazzo…",
+  "overlay.viewUsedDeck": "Visualizza il mazzo usato",
+  "overlay.usedDeck": "Mazzo usato in questo duello",
   "lobby.randomPool": "{count} mazzi validi disponibili",
   "lobby.randomPoolOne": "1 mazzo valido disponibile",
   "lobby.randomPoolLabel": "Selezione misteriosa",
@@ -2024,4 +2048,8 @@ const releaseTranslations = Object.fromEntries(
   Object.entries(releaseMessages).flatMap(([key, message]) => ("it" in message ? [[key, message.it]] : [])),
 );
 
-export const it: Record<keyof typeof en, string> = { ...en, ...interfaceMessages, ...releaseTranslations };
+export const it: Record<keyof typeof en, string> = {
+  ...en,
+  ...interfaceMessages,
+  ...releaseTranslations,
+};

@@ -353,6 +353,7 @@ export async function resolveTiming(timing: EffectTiming, env: ResolutionEnv): P
       // `permanentIdentityOf`). Same exclusions as the presence diff: the effect currently
       // executing may legitimately move its own source card as part of its body.
       for (const c of collectedThisPass) {
+        if (c.effect.isActivatedConsequence === true) continue;
         const identity = permanentIdentityOf(c.source);
         if (identity === undefined) continue;
         const key = declineKey(c);

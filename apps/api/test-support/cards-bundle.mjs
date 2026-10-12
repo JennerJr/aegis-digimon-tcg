@@ -36,11 +36,14 @@ function cardModulesBySet() {
 
 function fingerprints(sets) {
   const all = createHash("sha1");
+  const bundlerSource = readFileSync(fileURLToPath(import.meta.url));
   all.update(nodeTarget);
+  all.update(bundlerSource);
   const bySet = {};
   for (const [set, files] of sets) {
     const local = createHash("sha1");
     local.update(nodeTarget);
+    local.update(bundlerSource);
     for (const file of files) {
       const { mtimeMs, size } = statSync(file);
       const fact = `${file}\0${mtimeMs}\0${size}\n`;
@@ -54,6 +57,22 @@ function fingerprints(sets) {
 
 function bundlePathFor(set) {
   return resolve(cacheDirectory, `${set}.mjs`);
+}
+
+function resolveLocalModule({ specifier, resolveDirectory }) {
+  let base;
+  if (specifier.startsWith("#api/")) {
+    base = resolve(apiRoot, "src", specifier.slice("#api/".length));
+    if (!base.endsWith(".ts") && !base.endsWith(".js")) base += ".ts";
+  } else if (specifier.startsWith("/")) {
+    base = specifier;
+  } else if (specifier.startsWith(".")) {
+    base = resolve(resolveDirectory, specifier);
+  } else {
+    return undefined;
+  }
+  if (base.endsWith(".js") && existsSync(base.slice(0, -3) + ".ts")) return base.slice(0, -3) + ".ts";
+  return base;
 }
 
 export async function buildCardsBundle() {
@@ -123,11 +142,8 @@ export async function buildCardsBundle() {
             setup(pluginBuild) {
               pluginBuild.onResolve({ filter: /.*/ }, (args) => {
                 if (args.kind === "entry-point") return undefined;
-                if (!args.path.startsWith(".") && !args.path.startsWith("/"))
-                  return { path: args.path, external: true };
-                const base = args.path.startsWith("/") ? args.path : resolve(args.resolveDir, args.path);
-                const file =
-                  base.endsWith(".js") && existsSync(base.slice(0, -3) + ".ts") ? base.slice(0, -3) + ".ts" : base;
+                const file = resolveLocalModule({ specifier: args.path, resolveDirectory: args.resolveDir });
+                if (file === undefined) return { path: args.path, external: true };
                 if (bundled.has(file)) return { path: file };
                 return { path: pathToFileURL(file).href, external: true };
               });

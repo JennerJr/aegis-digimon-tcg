@@ -97,7 +97,7 @@ function DeckPickerView({
   format?: import("@aegis/shared").DeckFormat;
   activeDeckId: string;
   randomSelected: boolean;
-  randomPoolSize: number;
+  randomPoolSize: number | undefined;
   onSelectRandom: () => void;
   onSelectDeck: (id: string) => void;
   onCopyDeck: (deck: DeckListing) => void;

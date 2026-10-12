@@ -152,6 +152,7 @@ export function MatchOverlays({
     | (ReplaySaveProps & {
         spectatorResult?: string;
         onDownloadReplay?: () => void;
+        onViewUsedDeck?: () => void;
         replayStatus?: "preparing" | "unavailable";
         result: GameOverOutcome;
         reason: string;

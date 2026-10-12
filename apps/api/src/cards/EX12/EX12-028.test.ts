@@ -216,10 +216,18 @@ describe("EX12-028 Gusokumon", () => {
     await advance(s.engine).fireSubTrigger("whenAttacking", {
       attackerPermanentId: s.perm("attacker").permanentId,
     });
-    await settle(() => s.perm("host").stack.length === 1 && s.perm("target").stack.length === 0);
+    await settle(
+      () =>
+        s.perm("host").stack.length === 1 &&
+        s.state.players[1]!.trash.some((card) => card.cardId === "BT1-001") &&
+        s.state.pendingDecision === undefined,
+    );
 
     expect(s.perm("host").stack.map((card) => card.cardId)).toEqual(["EX12-023"]);
-    expect(s.perm("target").topCard?.cardId).toBe("BT1-001");
+    expect(s.state.players[1]!.trash.map((card) => card.cardId)).toEqual(
+      expect.arrayContaining(["BT1-083", "BT1-001"]),
+    );
+    expect(s.state.players[1]!.battleArea.some((permanent) => permanent.topCard.cardId === "BT1-001")).toBe(false);
     expect(s.state.memory).toBe(1);
   });
 
@@ -354,9 +362,17 @@ describe("EX12-028 Gusokumon", () => {
       await advance(s.engine).fireSubTrigger("whenAttacking", {
         attackerPermanentId: s.perm("attacker").permanentId,
       });
-      await settle(() => s.perm("host").stack.length === 1 && s.perm("target").stack.length === 0);
+      await settle(
+        () =>
+          s.perm("host").stack.length === 1 &&
+          s.state.players[1]!.trash.some((card) => card.cardId === "BT1-001") &&
+          s.state.pendingDecision === undefined,
+      );
 
-      expect(s.perm("target").topCard?.cardId).toBe("BT1-001");
+      expect(s.state.players[1]!.trash.map((card) => card.cardId)).toEqual(
+        expect.arrayContaining(["BT1-083", "BT1-001"]),
+      );
+      expect(s.state.players[1]!.battleArea.some((permanent) => permanent.topCard.cardId === "BT1-001")).toBe(false);
       expect(s.state.memory).toBe(memoryAfter);
     }
   });

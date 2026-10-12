@@ -1,4 +1,4 @@
-import { openFixturePage } from "./scenario-page";
+import { openFixturePage, answerActivation } from "./scenario-page";
 import fixtureDavisLargeHand from "../../api/src/engine/scenarios/davis-large-hand.fixture";
 import fixtureGuilmonXReveal from "../../api/src/engine/scenarios/guilmon-x-reveal.fixture";
 import fixtureKudamonMoving from "../../api/src/engine/scenarios/kudamon-moving.fixture";
@@ -103,9 +103,7 @@ test("Davis can select Veemon from a large hand", async ({ page }) => {
     });
     await openFixturePage(page, fixtureDavisLargeHand);
     await page.getByRole("button", { name: /^end breeding$/i }).click();
-    const panel = page.getByRole("dialog");
-    await expect(panel).toBeVisible();
-    await panel.getByRole("button", { name: /^Use$/i }).click();
+    await answerActivation(page, true);
     const selection = page.getByRole("region", { name: "Hand selection", exact: true });
     await expect(selection).toBeVisible();
     const veemon = page.getByTestId("hand").getByRole("img", { name: "Veemon", exact: true });
@@ -135,6 +133,7 @@ for (const viewport of [
       });
       await openFixturePage(page, fixtureGuilmonXReveal);
       await page.getByRole("button", { name: /^end breeding$/i }).click();
+      await expect(page.getByRole("button", { name: /^end turn$/i })).toBeEnabled();
       const card = page.getByTestId("hand").getByRole("button", { name: "Select Guilmon (X Antibody)", exact: true });
       await card.focus();
       await card.press("Enter");

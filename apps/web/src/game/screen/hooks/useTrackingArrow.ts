@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MutableRefObject, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type MutableRefObject, type RefObject } from "react";
 import type { DecisionRequest, GameState, Seat, ServerEvent } from "@aegis/shared";
 import { clipToBox, type ArrowBox } from "../../arrowGeometry";
 import {
@@ -105,7 +105,8 @@ export function useTrackingArrow({
   const retainedClockRef = useRef<AttackArrowClock | undefined>(undefined);
   const lastPermanentBoxesRef = useRef(new Map<string, ArrowBox>());
   const trackingArrowActive = trackingArrowRequest !== null;
-  useEffect(() => {
+  const requestIdentity = JSON.stringify(trackingArrowRequest);
+  useLayoutEffect(() => {
     if (!trackingArrowActive) {
       setTrackingArrow(null);
       return;
@@ -177,10 +178,11 @@ export function useTrackingArrow({
       }
       const boardRect = board.getBoundingClientRect();
       const fromBox = endpoint(request.from, boardRect);
-      const toBoxes = request.to.flatMap((end) => {
+      const targetEntries = request.to.flatMap((end) => {
         const box = endpoint(end, boardRect);
-        return box ? [box] : [];
+        return box ? [{ box, end }] : [];
       });
+      const toBoxes = targetEntries.map((entry) => entry.box);
       const firstTarget = toBoxes[0];
       if (!fromBox || !firstTarget) {
         if (applied !== "") {
@@ -207,13 +209,16 @@ export function useTrackingArrow({
         from,
         to,
         sourcePermanentId: request.from.permanentId,
+        targetKeys: targetEntries.map(({ end }) =>
+          end.kind === "permanent" ? end.permanentId : end.seat === viewerSeat ? "security-you" : "security-opp",
+        ),
         clock:
           arrowClockRef.current ??
           (retainedClockRef.current?.key === request.key ? retainedClockRef.current : undefined),
       });
     };
-    frame = window.requestAnimationFrame(solve);
+    solve();
     return () => window.cancelAnimationFrame(frame);
-  }, [trackingArrowActive, viewerSeat]);
+  }, [trackingArrowActive, viewerSeat, requestIdentity]);
   return trackingArrow;
 }

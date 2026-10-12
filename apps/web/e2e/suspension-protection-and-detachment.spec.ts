@@ -6,7 +6,7 @@ import fixtureGankoomonNoirNoSistermon from "../../api/src/engine/scenarios/gank
 import fixtureYaoSuspendWithoutPlacement from "../../api/src/engine/scenarios/yao-suspend-without-placement.fixture";
 import fixtureMegakabuterimonInsectoid from "../../api/src/engine/scenarios/megakabuterimon-insectoid.fixture";
 import fixtureKnightmonOpponentAttack from "../../api/src/engine/scenarios/knightmon-opponent-attack.fixture";
-import { fixturePermanentId, fixtureInstanceId } from "../../api/src/engine/scenario/references";
+import { fixturePermanentId, fixtureInstanceId, fixtureZoneId } from "../../api/src/engine/scenario/references";
 import { test, expect } from "./scenario-page";
 
 test("(Q7365): Examon's Piercing still checks after Barrier saves the attack target", async ({ scenario, page }) => {
@@ -179,11 +179,15 @@ test("MegaKabuterimon offers and pays its [Insectoid] trait cost 3", async ({ sc
   const { page } = scenario;
   await scenario.openFixture(fixtureMegakabuterimonInsectoid);
   await scenario.resolveUntil((s) => s.phase === "Main" && !s.pendingDecision);
-  const card = page.locator('[data-hand-instance-id="arena-megakabuterimon-insectoid-0-hand-0"]');
+  const card = page.locator(
+    `[data-hand-instance-id="${fixtureZoneId(fixtureMegakabuterimonInsectoid, 0, "hand", 0)}"]`,
+  );
   await card.focus();
   await card.press("Enter");
   await page.getByRole("button", { name: "Digivolve", exact: true }).click();
-  await page.locator('[data-drop="perm-you"][data-id="arena-megakabuterimon-insectoid-0-field-0"]').click();
+  await page
+    .locator(`[data-drop="perm-you"][data-id="${fixtureZoneId(fixtureMegakabuterimonInsectoid, 0, "field", 0)}"]`)
+    .click();
   await expect(page.locator(".evo-cost-prompt__option")).toHaveCount(2);
   await page.locator(".evo-cost-prompt__option[data-recommended]").click();
   await scenario.resolveUntil((s) => s.players[0]!.battleArea[0]!.topCard.cardId === "P-140" && !s.pendingDecision);

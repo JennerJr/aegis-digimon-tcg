@@ -81,6 +81,7 @@ interface Entry {
 }
 
 const RELEVANT = new Set([
+  "replay.rollback",
   "replay.header",
   "replay.seat",
   "replay.input",
@@ -199,9 +200,23 @@ function buildRecord(entries: Entry[], matchId: string): ReplayRecord {
   const inputs: ReplayInput[] = [];
   const seats: (ReplaySeat | undefined)[] = [undefined, undefined];
   let started = false;
+  let versionOffset = 0;
   for (const { name, payload, replaySeq } of entries) {
+    if (name === "replay.rollback") {
+      if (
+        Number.isInteger(payload.index) &&
+        typeof payload.index === "number" &&
+        payload.index >= 0 &&
+        payload.index <= inputs.length &&
+        typeof payload.versionOffset === "number"
+      ) {
+        inputs.length = payload.index;
+        versionOffset = payload.versionOffset;
+      }
+      continue;
+    }
     const placed = {
-      stateVersion: typeof payload.stateVersion === "number" ? payload.stateVersion : 0,
+      stateVersion: typeof payload.stateVersion === "number" ? payload.stateVersion - versionOffset : 0,
       ...(typeof payload.engineEvents === "number" ? { engineEvents: payload.engineEvents } : {}),
     };
     if (name === "replay.seat") {

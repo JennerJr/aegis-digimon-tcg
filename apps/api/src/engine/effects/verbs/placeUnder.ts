@@ -28,7 +28,11 @@ export function createPlaceUnderVerbs(pc: PrimitivesContext) {
       return [];
     const placed: CardInstance[] = [];
     const deckSources = new Map<Seat, number>();
+    const securitySources = new Set<Seat>();
     for (const instanceId of instanceIds) {
+      for (const owner of state.players) {
+        if (owner.security.some((card) => card.instanceId === instanceId)) securitySources.add(owner.seat);
+      }
       if (opts?.faceUp === false) {
         for (const owner of state.players) {
           if (owner.deck.some((card) => card.instanceId === instanceId)) {
@@ -73,6 +77,13 @@ export function createPlaceUnderVerbs(pc: PrimitivesContext) {
         addedDigivolutionCardsPosition: opts?.belowTop ? "top" : "bottom",
         ...(effectSeatStack.at(-1) !== undefined ? { byEffectSeat: effectSeatStack.at(-1) } : {}),
       });
+      for (const seat of securitySources) {
+        await engine.fireSubTrigger?.("whenEffectRemovesFromSecurity", { removedFromSecuritySeat: seat });
+        await engine.fireSubTrigger?.("whenSecurityRemoved", {
+          removedFromSecuritySeat: seat,
+          securityRemovedByEffect: true,
+        });
+      }
     }
     return placed;
   };

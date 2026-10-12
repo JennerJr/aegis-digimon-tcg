@@ -3,7 +3,7 @@
    twice as it extends and then stays up, following its endpoints until the attack or
    the effect is over. */
 
-import { AttackArrow } from "../../piece";
+import { AttackArrow } from "@/game/piece/AttackArrow";
 import type { TrackingArrowGeometry } from "../types";
 
 export function AttackArrowLayer({
@@ -25,6 +25,7 @@ export function AttackArrowLayer({
           tracking
           attackKey={tracking.key}
           sourcePermanentId={tracking.sourcePermanentId}
+          targetKeys={tracking.targetKeys}
           clock={tracking.clock}
         />
       ) : null}

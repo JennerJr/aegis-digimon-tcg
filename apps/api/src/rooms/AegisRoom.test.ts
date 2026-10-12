@@ -314,6 +314,40 @@ describe("AegisRoom ready-gated match start", () => {
     expect(startMatchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("requires the connected player's secret token before adding a bot", () => {
+    const room = makeRoom();
+    room.roomId = "casual-room";
+    const human = fakeClient("human");
+    human.reconnectionToken = "private-token";
+    room.clients.push(human);
+    room.onJoin(human, { displayName: "Human", deck: RED_DECK });
+    const addBot = vi.spyOn(room, "addBot").mockReturnValue(true);
+    for (const reconnectionToken of ["", "casual-room:human", "other-room:private-token", "casual-room:wrong-token"]) {
+      expect(room.requestBot({ reconnectionToken })).toBe(403);
+    }
+    expect(addBot).not.toHaveBeenCalled();
+    expect(room.requestBot({ reconnectionToken: "casual-room:private-token", botDeckId: "chosen-deck" })).toBe(200);
+    expect(addBot).toHaveBeenCalledWith("chosen-deck");
+    addBot.mockReturnValue(false);
+    expect(room.requestBot({ reconnectionToken: "casual-room:private-token" })).toBe(409);
+    human.reconnectionToken = "rotated-token";
+    expect(room.requestBot({ reconnectionToken: "casual-room:private-token" })).toBe(403);
+    expect(room.requestBot({ reconnectionToken: "casual-room:rotated-token" })).toBe(409);
+    room.clients.splice(0);
+    expect(room.requestBot({ reconnectionToken: "casual-room:rotated-token" })).toBe(403);
+  });
+
+  it("refuses bot requests from a connected client without a player seat", () => {
+    const room = makeRoom();
+    room.roomId = "casual-room";
+    const observer = fakeClient("observer");
+    observer.reconnectionToken = "observer-token";
+    room.clients.push(observer);
+    const addBot = vi.spyOn(room, "addBot");
+    expect(room.requestBot({ reconnectionToken: "casual-room:observer-token" })).toBe(403);
+    expect(addBot).not.toHaveBeenCalled();
+  });
+
   it("addBot seats a bot in a dedicated bot room and starts without waiting for ready", () => {
     const room = makeRoom({ botRoom: true });
     // Production attaches the room state to an Encoder before clients join. Keep

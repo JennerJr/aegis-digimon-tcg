@@ -8,6 +8,7 @@ test("/ Q7288: Sukamon's inherited cost selects the opposing Sukamon", async ({ 
   await scenario.openFixture(fixtureSukamonOpponentCost);
   await scenario.resolveUntil((s) => s.phase === "Main" && !s.pendingDecision);
   await page.getByRole("button", { name: /^end turn$/i }).click();
+  await expect.poll(async () => (await scenario.snapshot()).pendingDecision?.seat, { timeout: 60_000 }).toBe(0);
   await scenario.resolveUntil(
     (s) =>
       s.players[1]!.trash.some((c) => c.instanceId === fixtureInstanceId("report-gaia-card")) && !s.pendingDecision,

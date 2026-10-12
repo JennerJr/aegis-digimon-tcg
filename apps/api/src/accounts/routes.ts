@@ -166,8 +166,12 @@ export function installAccountRoutes(
   });
 
   post("/auth/magic-link", async (req, res) => {
-    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
-    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    if (email.length <= 254 && email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (!(await store.allowMagicLinkRequest({ ip: req.ip ?? "unknown", email }))) {
+        res.status(429).json({ error: "too_many_requests" });
+        return;
+      }
       const { token } = await store.createMagicLink(email);
       try {
         await mailer?.({
@@ -217,7 +221,9 @@ export function installAccountRoutes(
   });
   get("/auth/discord/callback", async (req, res) => {
     const code = typeof req.query.code === "string" ? req.query.code : "";
-    if (!code || req.query.state !== cookie(req, "aegis_oauth_state")) {
+    const state = req.query.state;
+    const expectedState = cookie(req, "aegis_oauth_state");
+    if (!code || typeof state !== "string" || !state || !expectedState || state !== expectedState) {
       res.status(400).json({ error: "invalid OAuth state" });
       return;
     }

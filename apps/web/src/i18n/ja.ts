@@ -3,6 +3,24 @@ import { en } from "@/i18n/en";
 
 const interfaceMessages = {
   ...forumEn,
+  "rollback.failed": "この時点を安全に復元できませんでした。現在の対戦状態は維持されています。",
+  "rollback.cancel": "リクエストを取り消す",
+  "rollback.allow": "巻き戻しを許可",
+  "rollback.help": "巻き戻しの仕組み",
+  "rollback.optionHint":
+    "巻き戻しでは、直前の行動を取り消したり、ターンの開始時点に戻ったりできます。カード、メモリー、対戦状態が復元されます。",
+  "rollback.controls": "巻き戻し",
+  "rollback.undo": "直前の行動を取り消す",
+  "rollback.turn": "ターン開始時に戻る",
+  "rollback.turnHint":
+    "現在のターンを、ターン開始時の効果、アクティブ化、ドローの前に戻します。まだ行動していない場合は、前のターンの開始時点に戻ります。終了した対戦は巻き戻せません。",
+  "rollback.hiddenHint": "一度見たカードの情報は忘れることができません。巻き戻す前に対戦相手と合意してください。",
+  "rollback.waiting": "対戦相手の承認を待っています。対戦は一時停止中です。",
+  "rollback.requestAction": "対戦相手が直前の行動の取り消しを求めています。",
+  "rollback.requestTurn": "対戦相手がターン開始時への巻き戻しを求めています。",
+  "rollback.accept": "承認",
+  "rollback.reject": "拒否",
+  "rollback.restoring": "対戦を復元中…",
   "profile.matches": "一致",
   "profile.guestHint":
     "あなたの名前とアバターはこのデバイスにのみ保存されます。試合履歴とリプレイを保存するにはサインインしてください。",
@@ -571,6 +589,11 @@ const interfaceMessages = {
   "lobby.randomAction": "驚かせてください",
   "lobby.randomSelected": "ミステリーが選択されました",
   "lobby.randomDeckHint": "試合が始まるとあなたのデッキが公開されます。",
+  "lobby.randomCommunityPool": "自分のデッキ、有名なデッキ、コミュニティの公開デッキ",
+  "lobby.randomFailed": "デッキを選べませんでした。再試行してください。",
+  "lobby.randomDrawing": "デッキを抽選中…",
+  "overlay.viewUsedDeck": "使用したデッキを見る",
+  "overlay.usedDeck": "この対戦で使用したデッキ",
   "lobby.randomPool": "{count} 個の合法的なデッキがプールにあります",
   "lobby.randomPoolOne": "プールに合法的なデッキ 1 つ",
   "lobby.randomPoolLabel": "ミステリープール",

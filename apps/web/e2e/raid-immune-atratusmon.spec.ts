@@ -6,6 +6,8 @@ test.use({ holdBotAfterTurn: 4 });
 
 test("Raid targets an immune Atratusmon and finishes battle without security checks", async ({ scenario }) => {
   await scenario.openFixture(fixtureRaidImmuneAtratusmon);
+  await expect.poll(async () => (await scenario.snapshot()).turnSeat, { timeout: 60_000 }).toBe(0);
+  await scenario.page.getByRole("button", { name: /^end breeding$/i }).click();
   await scenario.resolveUntil((s) => s.turnSeat === 0 && s.phase === "Main" && !s.pendingDecision);
   const before = await scenario.snapshot();
   const atratus = before.players[1]!.battleArea.find((p) => p.topCard.cardId === "ST23-09")!;

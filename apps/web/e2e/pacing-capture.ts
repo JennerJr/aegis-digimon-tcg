@@ -732,8 +732,17 @@ export async function startPacingCapture(page: Page) {
         const matrix = head?.getScreenCTM();
         if (!matrix) continue;
         const point = new DOMPoint(0, 0).matrixTransform(matrix);
+        const targetKeys = JSON.parse(arrow.dataset.attackTargets ?? "[]") as string[];
         const nearest = endpoints
           .filter((element) => element.dataset.id !== arrow.dataset.attackSource)
+          .filter(
+            (element) =>
+              targetKeys.length === 0 ||
+              targetKeys.includes(
+                element.dataset.id ??
+                  (element.classList.contains("game-security-shield--you") ? "security-you" : "security-opp"),
+              ),
+          )
           .map((element) => {
             const face = element.querySelector<HTMLElement>(".game-card-enter > [data-state]") ?? element;
             const rect = face.getBoundingClientRect();

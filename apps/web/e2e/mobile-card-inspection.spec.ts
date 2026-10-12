@@ -1,9 +1,10 @@
-import { openFixturePage } from "./scenario-page";
+import { openFixturePage, ScenarioPage } from "./scenario-page";
 import fixtureMobileInspection from "../../api/src/engine/scenarios/mobile-inspection.fixture";
 
 import { fixturePermanentId } from "../../api/src/engine/scenario/references";
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { startBrowserServer } from "./server";
+import { exposedCardPoint } from "./exposedCardPoint";
 
 class MobileInspectionArena {
   constructor(readonly page: Page) {}
@@ -69,7 +70,7 @@ class MobileInspectionArena {
     await expect(this.page.getByRole("dialog")).toHaveCount(0);
     await targets.getByRole("button", { name: "Select on board", exact: true }).tap();
     await expect(targets).toHaveCount(0);
-    await this.alphamon().getByRole("img", { name: "Alphamon", exact: true }).tap();
+    await this.pickFieldCard(this.alphamon());
     await this.page.getByRole("button", { name: "Return to decision", exact: true }).tap();
     await expect(targets.getByRole("button", { name: "Confirm targets", exact: true })).toBeEnabled();
     await targets.getByRole("button", { name: "Confirm targets", exact: true }).tap();
@@ -82,15 +83,23 @@ class MobileInspectionArena {
     await expect(targets).toBeVisible();
     await expect(this.page.getByRole("dialog")).toHaveCount(0);
     // Both copies are legal physical targets. Deliberately keep the first picked through inspection.
-    await this.page
-      .locator(`[data-drop="perm-opp"][data-id="${fixturePermanentId("opponent-inspection-dorumon-first")}"]`)
-      .getByRole("img", { name: "Dorumon", exact: true })
-      .tap();
+    await targets.getByRole("button", { name: "Select on board", exact: true }).tap();
+    await expect(targets).toHaveCount(0);
+    await this.pickFieldCard(
+      this.page.locator(`[data-drop="perm-opp"][data-id="${fixturePermanentId("opponent-inspection-dorumon-first")}"]`),
+    );
+    await this.page.getByRole("button", { name: "Return to decision", exact: true }).tap();
     await expect(targets.getByRole("button", { name: "Confirm targets", exact: true })).toBeEnabled();
     await this.page.getByRole("button", { name: "Select on board", exact: true }).tap();
     await expect(this.page.getByRole("button", { name: "Return to decision", exact: true })).toBeVisible();
     await expect(this.alphamon().getByRole("button", { name: "Read Alphamon", exact: true })).toBeVisible();
     await expect(this.page.getByRole("button", { name: "Read Coredramon", exact: true })).toBeVisible();
+  }
+
+  private async pickFieldCard(target: Locator) {
+    const point = await exposedCardPoint({ target, touch: true });
+    const bounds = (await target.boundingBox())!;
+    await target.tap({ position: { x: point.x - bounds.x, y: point.y - bounds.y } });
   }
 
   alphamon() {
@@ -100,9 +109,7 @@ class MobileInspectionArena {
   }
 
   async hold(target: Locator, cardName = "Alphamon") {
-    const bounds = await target.boundingBox();
-    expect(bounds).not.toBeNull();
-    const point = { x: bounds!.x + bounds!.width * 0.7, y: bounds!.y + bounds!.height * 0.3 };
+    const point = await exposedCardPoint({ target, touch: true });
     const dialog = this.page.getByRole("dialog", { name: cardName, exact: true });
     if (this.page.context().browser()?.browserType().name() !== "chromium") {
       // Playwright keeps a trusted finger down only through Chromium's CDP. Elsewhere
@@ -167,11 +174,12 @@ for (const viewport of [
 ]) {
   test(`inspect Alphamon without changing a target at ${viewport.width}px`, async ({ page }) => {
     const server = await startBrowserServer();
+    const evidence = new ScenarioPage(page);
     try {
       await page.setViewportSize(viewport);
       const arena = new MobileInspectionArena(page);
       await arena.open();
-      await arena.hold(arena.alphamon().getByRole("img", { name: "Alphamon", exact: true }));
+      await arena.hold(arena.alphamon());
       const inspector = page.getByRole("dialog", { name: "Alphamon", exact: true });
       await expect(inspector).toContainText("When any of your [Chronicle] trait Digimon would leave");
       await inspector.getByRole("button", { name: "Enlarge card", exact: true }).tap();
@@ -205,6 +213,8 @@ for (const viewport of [
       await expect(page.getByRole("button", { name: "Return to decision", exact: true })).toHaveCount(0);
       await expect(page.locator(".game-permanent__inspect")).toHaveCount(0);
     } finally {
+      await evidence.evidence(test.info());
+      await page.screenshot({ path: test.info().outputPath("final-ui.png") });
       await page.close();
       await server.close();
     }
@@ -219,7 +229,7 @@ test("holding an attack-capable own Digimon outside selection reads it without a
     const coredramon = page
       .locator('[data-drop="perm-you"]')
       .filter({ has: page.getByRole("img", { name: "Coredramon", exact: true }) });
-    await arena.hold(coredramon.getByRole("img", { name: "Coredramon", exact: true }), "Coredramon");
+    await arena.hold(coredramon, "Coredramon");
     const inspector = page.getByRole("dialog", { name: "Coredramon", exact: true });
     await expect(inspector.getByRole("button", { name: "Attack", exact: true })).toBeEnabled();
     await inspector.getByRole("button", { name: "Close", exact: true }).tap();

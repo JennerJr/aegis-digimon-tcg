@@ -876,6 +876,10 @@
   min-width: 0;
 }
 
+.game-result__used-deck {
+  margin-top: var(--ds-space-4);
+}
+
 .game-result .game-actions-row > .aegis-button {
   width: 100%;
   min-width: 0;

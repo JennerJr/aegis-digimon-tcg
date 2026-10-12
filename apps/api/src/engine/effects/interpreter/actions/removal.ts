@@ -1027,18 +1027,6 @@ export async function runRemovalAction(ctx: EffectContext, action: Action, scope
                 : "endOfOwnerTurn",
             ctx.source.cardId,
           );
-      } else {
-        const self = ctx.source.permanent();
-        if (self !== undefined)
-          ctx.fx.delayedDeletePlayed?.(
-            self.permanentId,
-            action.timing === "endOfCurrentTurn"
-              ? "endOfCurrentTurn"
-              : action.timing === "endOfOpponentTurn"
-                ? "endOfOpponentTurn"
-                : "endOfOwnerTurn",
-            ctx.source.cardId,
-          );
       }
       return false;
     }

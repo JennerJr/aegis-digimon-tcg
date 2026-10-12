@@ -58,7 +58,6 @@ describe("P-216 WaruMonzaemon", () => {
             },
           },
         },
-        { kind: "Restrict", target: { sameTarget: true }, restriction: "digivolve", duration: "permanent" },
         { kind: "DelayedDeletePlayed", timing: "endOfOwnerTurn" },
       ],
     });
@@ -142,7 +141,7 @@ describe("P-216 engine behavior", () => {
       s.state.players[0]!.battleArea.some((p) => p.topCard.instanceId === s.inst("masters").instanceId),
     );
     const played = s.state.players[0]!.battleArea.find((p) => p.topCard.instanceId === s.inst("masters").instanceId)!;
-    expect(observe(s.engine).isRestricted(played, "digivolve")).toBe(true);
+    expect(observe(s.engine).isRestricted(played, "digivolve")).toBe(false);
 
     s.state.turnSeat = 0;
     await advance(s.engine).fireGlobal(EffectTiming.OnEndTurn);
@@ -174,7 +173,7 @@ describe("P-216 WaruMonzaemon — KB Q&A rulings", () => {
     await advance(s.engine).waitForMainPhase(0);
     await advance(s.engine).verb.deletePermanent([s.perm("waru").permanentId]);
     await settle(() => onField(s, mastersId) !== undefined && s.state.pendingDecision === undefined);
-    expect(observe(s.engine).isRestricted(onField(s, mastersId)!, "digivolve")).toBe(true);
+    expect(observe(s.engine).isRestricted(onField(s, mastersId)!, "digivolve")).toBe(false);
 
     expect(s.engine.applyIntent(0, { type: "endPhase" })).toEqual({ ok: true });
     await advance(s.engine).waitForMainPhase(1);

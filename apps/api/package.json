@@ -1,6 +1,6 @@
 {
   "name": "@aegis/api",
-  "version": "1.24.0-beta",
+  "version": "1.25.0-beta",
   "private": true,
   "description": "Aegis authoritative game server: Node + TypeScript + Colyseus. Owns 100% of game state and rules.",
   "type": "module",
@@ -15,9 +15,9 @@
   "scripts": {
     "dev": "GOMEMLIMIT=1GiB tsc -p tsconfig.dev.json --incremental --singleThreaded && node --enable-source-maps dist/index.js",
     "dev:fast": "GOMEMLIMIT=1GiB tsc -p tsconfig.dev.json --incremental --noCheck --singleThreaded && node --enable-source-maps dist/index.js",
-    "build": "tsc --noCheck -p tsconfig.json",
+    "build": "GOMEMLIMIT=1GiB tsc --noCheck -p tsconfig.build.json --singleThreaded",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "GOMEMLIMIT=1GiB tsc --noEmit -p tsconfig.json --singleThreaded",
     "test": "pnpm --filter @aegis/shared build && TEST_BATCH_CARDS=1 vitest run",
     "test:fast": "FAST=1 vitest run",
     "test:watch": "FAST=1 vitest --passWithNoTests",
@@ -31,7 +31,8 @@
     "fuzz:battles": "pnpm build && node dist/bot/battleFuzzerCli.js",
     "replay": "AEGIS_CARDS_BUNDLE=0 node --conditions=development --import=./test-support/ts-loader.mjs src/replays/inputs/cli.ts",
     "test:postgres": "POSTGRES_TESTS=1 vitest run src/db/postgres.atomicity",
-    "test:parallel": "concurrently -n fast,cards 'pnpm test:fast' 'pnpm test:cards'"
+    "test:parallel": "concurrently -n fast,cards 'pnpm test:fast' 'pnpm test:cards'",
+    "typecheck:tests": "GOMEMLIMIT=1GiB tsc --noEmit -p tsconfig.tests.json --singleThreaded"
   },
   "dependencies": {
     "@aegis/shared": "workspace:*",

@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { allReleases, currentRelease, displayVersion, issueUrl, parseCatalog } from "./catalog";
-import { LOCALES, translator, type TranslationKey } from "../i18n";
-import messages from "./messages.json";
+import { allReleases, currentRelease, displayVersion, issueUrl, parseCatalog } from "@/releases/catalog";
+import { LOCALES } from "@/i18n/locales";
+import { translator } from "@/i18n/translator";
+import type { TranslationKey } from "@/i18n/translationTypes";
+import messages from "@/releases/messages.json";
 
 describe("release catalog", () => {
   it("exposes the latest beta as the current release", () => {
-    expect(currentRelease().version).toBe("1.24.0-beta");
-    expect(displayVersion(currentRelease().version)).toBe("v1.24.0-BETA");
-    expect(allReleases()).toHaveLength(57);
+    expect(currentRelease().version).toBe("1.25.0-beta");
+    expect(displayVersion(currentRelease().version)).toBe("v1.25.0-BETA");
+    expect(allReleases()).toHaveLength(58);
   });
 
   it.each(LOCALES)("resolves every release message through the %s translator", (locale) => {

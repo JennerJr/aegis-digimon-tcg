@@ -3,6 +3,8 @@ import { RED_DECK, BLUE_DECK } from "../../api/dist/engine/testDecks.js";
 import { joinHeadlessOpponent } from "../test/scenarioHarness/headlessOpponent";
 import { startBrowserServer } from "./server";
 
+test.use({ hasTouch: true });
+
 interface FrameReport {
   frames: number;
   durationMs: number;

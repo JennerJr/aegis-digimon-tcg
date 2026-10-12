@@ -1,6 +1,6 @@
 import { fixtureZoneId } from "../../api/src/engine/scenario/references";
 import type { ScenarioFixture } from "../../api/src/engine/scenario/types";
-import { openFixturePage } from "./scenario-page";
+import { openFixturePage, ScenarioPage } from "./scenario-page";
 
 import fixtureEpulseTrash from "../../api/src/engine/scenarios/epulse-trash.fixture";
 import fixtureChuumonSelfReplay from "../../api/src/engine/scenarios/chuumon-self-replay.fixture";
@@ -80,26 +80,47 @@ test("EX5 Chuumon's inherited effect replays the same Chuumon from the trash", a
 });
 
 test("BlitzGreymon declines DNA and still attacks at End of Turn", async ({ page }) => {
-  const server = await startBrowserServer();
-  const id = fixtureDeclineDna;
+  const server = await startBrowserServer({ holdBotAfterTurn: 1 });
+  const scenario = new ScenarioPage(page, server.useFixture);
+  const fixture = fixtureDeclineDna;
   try {
-    await openScenario(page, id);
-    const security = page.locator('[data-drop="opp-security"]');
-    await expect(security).toHaveAttribute("aria-label", "Opponent security · 3");
+    await scenario.openFixture(fixture);
+    await scenario.resolveUntil((state) => state.phase === "Main" && !state.pendingDecision);
+    expect((await scenario.snapshot()).players[1]!.securityCount).toBe(3);
     await page.getByRole("button", { name: /^end turn$/i }).click();
-    await page.getByRole("button", { name: /^(Don't use|No)$/ }).click();
-    await page.getByRole("button", { name: /^(Use|Yes, activate)$/ }).click();
-    const blitz = page.locator(`[data-drop="perm-you"][data-id="${fixtureZoneId(id, 0, "field", 0)}"]`);
-    await blitz.click();
-    await page.getByRole("button", { name: "Confirm targets", exact: true }).click();
-    await page.getByRole("button", { name: "Attack", exact: true }).click();
+    let declinedDna = 0;
+    let acceptedAttack = 0;
+    await scenario.resolveUntil(
+      (state) =>
+        state.combatWindow?.kind === "alliance" ||
+        (state.turnSeat === 1 && !state.pendingDecision && !state.combatWindow),
+      (decision) => {
+        if (decision.kind === "optional") {
+          const dna = /DNA/i.test(decision.options.effectTextPart ?? decision.promptText);
+          if (dna) declinedDna++;
+          else acceptedAttack++;
+          return { accept: !dna };
+        }
+        const attacker = fixtureZoneId(fixture, 0, "field", 0);
+        return decision.options.candidateInstanceIds?.includes(attacker) ? { instanceId: attacker } : {};
+      },
+    );
     await page.getByRole("button", { name: "Pass", exact: true }).click();
-    const field = page.locator('[data-drop="perm-you"]');
-    await expect(field.getByRole("img", { name: "BlitzGreymon", exact: true })).toBeVisible();
-    await expect(field.getByRole("img", { name: "CresGarurumon", exact: true })).toBeVisible();
-    await expect(field.getByRole("img", { name: "Omnimon Alter-S", exact: true })).toHaveCount(0);
-    await expect(security).toHaveAttribute("aria-label", /Opponent security · [0-2]$/);
+    await scenario.resolveUntil(
+      (state) => state.turnSeat === 1 && !state.pendingDecision && !state.combatWindow,
+      () => ({ accept: false }),
+    );
+    expect(declinedDna).toBe(1);
+    expect(acceptedAttack).toBe(1);
+    const final = await scenario.snapshot();
+    expect(final.players[0]!.battleArea.map((permanent) => permanent.topCard.cardId)).toEqual(["AD1-009", "AD1-012"]);
+    expect(final.players[1]!.securityCount).toBeLessThan(3);
+    expect((await scenario.presentation()).events).toContainEqual(
+      expect.objectContaining({ kind: "attackDeclared", attackerPermanentId: fixtureZoneId(fixture, 0, "field", 0) }),
+    );
+    await scenario.healthy();
   } finally {
+    await scenario.evidence(test.info());
     await page.close();
     await server.close();
   }
@@ -144,13 +165,16 @@ test("KingSukamon's cost choice offers the hand Chuumon and its digivolution car
   const id = fixtureKingSukamonCost;
   try {
     await openScenario(page, id);
-    await digivolve(page, "KingSukamon", `${fixtureZoneId(id, 0, "field", 0)}`);
+    const originalTopId = await page.evaluate(
+      () => window.browserTestSnapshot().players[0]!.battleArea[0]!.topCard.instanceId,
+    );
+    await digivolve(page, "KingSukamon", fixtureZoneId(id, 0, "field", 0));
     await page.getByRole("button", { name: /^(Use|Yes, activate)$/ }).click();
     const panel = page.getByRole("dialog");
     const handChuumon = panel.locator(`[data-instance-id="${fixtureZoneId(id, 0, "hand", 1)}"]`);
     await expect(handChuumon).toBeEnabled();
     await expect(panel.locator(`[data-instance-id="${fixtureZoneId(id, 0, "source", 0, 0)}"]`)).toBeEnabled();
-    await expect(panel.locator(`[data-instance-id="${fixtureZoneId(id, 0, "field", 0)}"]`)).toBeEnabled();
+    await expect(panel.locator(`[data-instance-id="${originalTopId}"]`)).toBeEnabled();
     await handChuumon.click();
     await expect(handChuumon).toHaveAttribute("aria-pressed", "true");
     await panel.getByRole("button", { name: "Confirm targets", exact: true }).click();

@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { exposedCardPoint } from "./exposedCardPoint";
 
 export class GamePage {
   constructor(readonly page: Page) {}
@@ -31,11 +32,13 @@ export class GamePage {
     const attacker = this.page.locator(`[data-drop="perm-you"][data-id="${permanentId}"]`);
     await expect(attacker).toBeVisible();
     await expect(target).toBeVisible();
-    const from = (await attacker.boundingBox())!;
-    const to = (await target.boundingBox())!;
-    await this.page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await attacker.scrollIntoViewIfNeeded();
+    await target.scrollIntoViewIfNeeded();
+    const from = await exposedCardPoint({ target: attacker });
+    const to = await exposedCardPoint({ target });
+    await this.page.mouse.move(from.x, from.y);
     await this.page.mouse.down();
-    await this.page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 20 });
+    await this.page.mouse.move(to.x, to.y, { steps: 20 });
     await this.page.mouse.up();
   }
 }

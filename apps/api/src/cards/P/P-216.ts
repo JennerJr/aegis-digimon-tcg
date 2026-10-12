@@ -85,25 +85,6 @@ const compiled: CompiledCard = {
           optional: true,
         },
         {
-          kind: "Restrict",
-          target: {
-            filter: {
-              controller: "mine",
-              kind: ["Digimon"],
-              nameOrTrait: [
-                {
-                  tokens: ["Dark Masters"],
-                  match: "trait",
-                },
-              ],
-            },
-            count: 1,
-            sameTarget: true,
-          },
-          restriction: "digivolve",
-          duration: "permanent",
-        },
-        {
           kind: "DelayedDeletePlayed",
           timing: "endOfOwnerTurn",
           raw: "delete the Digimon this effect played at end of your turn",

@@ -1,5 +1,5 @@
-import { type CompiledCard } from "@aegis/shared";
-import { registerIrCard } from "../../engine/effects/interpreter.js";
+import type { CompiledCard } from "@aegis/shared/effects/ir/card";
+import { registerIrCard } from "#api/engine/effects/interpreter/registration/module";
 
 const compiled: CompiledCard = {
   effects: [
@@ -53,8 +53,8 @@ const compiled: CompiledCard = {
           target: {
             filter: {
               controller: "mine",
+              kind: ["Digimon"],
               nameOrTrait: [
-                { tokens: ["Takato Matsuki"], match: "nameExact" },
                 { tokens: ["Growlmon"], match: "nameExact" },
                 { tokens: ["WarGrowlmon"], match: "nameExact" },
               ],
@@ -62,7 +62,7 @@ const compiled: CompiledCard = {
             count: 3,
             requiredNamesExact: ["Takato Matsuki", "Growlmon", "WarGrowlmon"],
           },
-          mixedSources: { battleAreaPermanents: true, trash: true },
+          mixedSources: { sourcePermanent: true, trash: true },
           destination: { filter: { boundRef: "bt12_089_host" }, count: 1 },
           underSelectionRef: "bt12_089_host",
           position: "bottom",

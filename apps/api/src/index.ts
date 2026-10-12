@@ -1,12 +1,12 @@
+import { installBotRoutes } from "#api/rooms/installBotRoutes";
 import { installPrivateRoomRoutes } from "./rooms/privateRoomRoutes.js";
 import { installSpectatorRoutes } from "./rooms/spectatorRoutes.js";
 import { createServer } from "node:http";
-import { matchMaker } from "colyseus";
 import { defineAegisRooms } from "./rooms/defineAegisRooms.js";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import express from "express";
 import { ROOM_TYPE, ROOM_TYPE_PRIVATE } from "@aegis/shared";
-import { type AegisRoom, roomRegistry } from "./rooms/AegisRoom.js";
+import { roomRegistry } from "./rooms/AegisRoom.js";
 import "./cards/index.js"; // side-effect: registers every implemented card EffectModule
 import { log, logError, flushLogs } from "./logger.js";
 import { installAccountRoutes } from "./accounts/routes.js";
@@ -134,61 +134,7 @@ setRoomCreationAdmission(() => deploymentRuntime.allowMatchmaking("create"));
 cluster.onAcceptingNewRoomsChanged((accepting) => deploymentRuntime.applyAcceptingNewRooms(accepting));
 installDeploymentRoutes({ app, runtime: deploymentRuntime });
 
-/**
- * POST /bot/join  { roomId: string }
- * Seats a bot in a dedicated bot room, or temporarily in a casual room for an
- * already-open legacy web bundle. The room must have exactly one human player.
- * Returns 404 if absent, 409 if ineligible, or 200 { ok: true } on success.
- */
-app.post("/bot/join", async (req, res) => {
-  const { roomId, botDeckId: rawBotDeckId } = req.body as { roomId?: string; botDeckId?: unknown };
-  // Untrusted input: anything but a plain string is treated as "no preference" and
-  // the room falls back to its random bot-deck pool.
-  const botDeckId = typeof rawBotDeckId === "string" ? rawBotDeckId : undefined;
-  if (!roomId) {
-    log(`[BOT_JOIN] ${JSON.stringify({ status: 400, outcome: "room_id_required", slot: configuredSlot })}`);
-    res.status(400).json({ error: "roomId required" });
-    return;
-  }
-  const local = roomRegistry.get(roomId);
-  if (local === undefined && !cluster.clustered) {
-    log(`[BOT_JOIN] ${JSON.stringify({ roomId, status: 404, outcome: "room_not_found", slot: configuredSlot })}`);
-    res.status(404).json({ error: "room not found" });
-    return;
-  }
-  if (local !== undefined && local.clients.length !== 1) {
-    log(
-      `[BOT_JOIN] ${JSON.stringify({ roomId, status: 409, outcome: "unexpected_client_count", clients: local.clients.length, slot: configuredSlot })}`,
-    );
-    res.status(409).json({ error: "room must have exactly one human player" });
-    return;
-  }
-  // A room this process does not own lives on a sibling: `remoteRoomCall` runs `seatBot` there
-  // and returns its answer, so the caller cannot tell which process held the match.
-  const seated = local !== undefined ? local.addBot(botDeckId) : await remoteAddBot(roomId, botDeckId);
-  if (seated === undefined) {
-    log(`[BOT_JOIN] ${JSON.stringify({ roomId, status: 404, outcome: "room_not_found", slot: configuredSlot })}`);
-    res.status(404).json({ error: "room not found" });
-    return;
-  }
-  if (!seated) {
-    log(`[BOT_JOIN] ${JSON.stringify({ roomId, status: 409, outcome: "room_ineligible", slot: configuredSlot })}`);
-    res.status(409).json({ error: "bot is not allowed in this room" });
-    return;
-  }
-  log(`[BOT_JOIN] ${JSON.stringify({ roomId, status: 200, outcome: "bot_joined", slot: configuredSlot })}`);
-  res.json({ ok: true });
-});
-
-/** Seat a bot in a room owned by another process. Undefined when no process owns that room. */
-async function remoteAddBot(roomId: string, botDeckId?: string): Promise<boolean | undefined> {
-  try {
-    return await matchMaker.remoteRoomCall<AegisRoom, "addBot">(roomId, "addBot", [botDeckId]);
-  } catch (error) {
-    log(`[BOT_JOIN] ${JSON.stringify({ roomId, outcome: "remote_call_failed", error: String(error) })}`);
-    return undefined;
-  }
-}
+installBotRoutes(app);
 
 installPrivateRoomRoutes(app);
 

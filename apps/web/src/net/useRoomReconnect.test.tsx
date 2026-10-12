@@ -1,3 +1,4 @@
+import { USED_DECK_CHANNEL, type UsedDeck } from "@aegis/shared/decks/UsedDeck";
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -45,12 +46,13 @@ interface FakeRoom {
   emitLeave: (code: number) => void;
   emitDecision: (decision: DecisionRequest) => void;
   emitEvent: (event: SequencedServerEvent) => void;
+  emitUsedDeck: (deck: UsedDeck) => void;
 }
 
 function fakeRoom(roomId: string): FakeRoom {
   let onState: ((state: GameState) => void) | undefined;
   let onLeave: ((code: number) => void) | undefined;
-  const messages = new Map<string, (message: DecisionRequest | SequencedServerEvent) => void>();
+  const messages = new Map<string, (message: DecisionRequest | SequencedServerEvent | UsedDeck) => void>();
   const room = {
     roomId,
     sessionId: `${roomId}-session`,
@@ -62,7 +64,7 @@ function fakeRoom(roomId: string): FakeRoom {
     onStateChange: (handler: (state: GameState) => void) => {
       onState = handler;
     },
-    onMessage: (channel: string, handler: (message: DecisionRequest | SequencedServerEvent) => void) =>
+    onMessage: (channel: string, handler: (message: DecisionRequest | SequencedServerEvent | UsedDeck) => void) =>
       messages.set(channel, handler),
     onError: vi.fn(),
     onLeave: (handler: (code: number) => void) => {
@@ -82,6 +84,7 @@ function fakeRoom(roomId: string): FakeRoom {
     emitLeave: (code) => act(() => onLeave?.(code)),
     emitDecision: (decision) => act(() => messages.get(DECISION_CHANNEL)?.(decision)),
     emitEvent: (event) => act(() => messages.get(EVENT_CHANNEL)?.(event)),
+    emitUsedDeck: (deck) => act(() => messages.get(USED_DECK_CHANNEL)?.(deck)),
   };
 }
 
@@ -434,4 +437,24 @@ it("GitHub #5210: restores game-two mulligan from a decoded state when its messa
   const { result } = renderHook(() => useRoom(OPTIONS));
   await waitFor(() => expect(result.current.status).toBe("connected"));
   expect(result.current.decision).toMatchObject(initial.pendingDecision!);
+});
+
+it("requests the authoritative used deck again after reconnect and keeps an immutable copy", async () => {
+  sessionStorage.clear();
+  const joined = fakeRoom("deck-match");
+  const resumed = fakeRoom("deck-resumed");
+  joinOrCreate.mockResolvedValue(joined.room);
+  reconnect.mockResolvedValue(resumed.room);
+  const { result } = renderHook(() => useRoom(OPTIONS));
+  await waitFor(() => expect(result.current.room).toBe(joined.room));
+  expect(joined.room.send).toHaveBeenCalledWith(USED_DECK_CHANNEL, {});
+  const deck: UsedDeck = { deckId: "used", deckName: "Original", mainDeck: ["BT1-009"], eggDeck: ["BT1-001"] };
+  joined.emitUsedDeck(deck);
+  deck.mainDeck[0] = "BT1-010";
+  expect(result.current.usedDeck?.mainDeck).toEqual(["BT1-009"]);
+  joined.emitLeave(1006);
+  await waitFor(() => expect(result.current.room).toBe(resumed.room));
+  expect(resumed.room.send).toHaveBeenCalledWith(USED_DECK_CHANNEL, {});
+  resumed.emitUsedDeck({ ...deck, mainDeck: ["BT1-009"] });
+  expect(result.current.usedDeck?.mainDeck).toEqual(["BT1-009"]);
 });

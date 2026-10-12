@@ -88,6 +88,7 @@ export interface DeckListing {
   /** This deck's Digi-Egg sleeve; absent means the global egg sleeve from Settings. */
   eggSleeveId?: string;
   format?: DeckFormat;
+  community?: import("@aegis/shared/decks/UsedDeck").UsedDeck["community"];
 }
 
 export interface FamousDeckListingGroup {

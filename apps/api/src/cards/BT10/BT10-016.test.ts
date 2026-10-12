@@ -197,6 +197,65 @@ describe("BT10-016 Jesmon (X Antibody) — later entrants", () => {
       }),
     ).toEqual({ ok: true });
   });
+
+  it("preserves the later-entrant attack grant after its installer digivolves again", async () => {
+    const s = setupEngine(
+      {
+        0: {
+          battleArea: [{ card: "BT6-016", as: "base" }],
+          breeding: { card: "BT4-038", as: "breedingRush" },
+          hand: [
+            { card: "BT10-016", as: "evolving" },
+            { card: "BT10-112", as: "nextEvolution" },
+          ],
+          deck: Array(8).fill("BT10-008"),
+        },
+        1: { battleArea: [{ card: "BT10-008", as: "unsuspendedOpponent" }] },
+      },
+      { autoDeclineOptional: true },
+    );
+    s.state.memory = 10;
+    s.state.turnCount += 1;
+    expect(
+      s.engine.applyIntent(0, {
+        type: "digivolve",
+        permanentId: s.perm("base").permanentId,
+        instanceId: s.inst("evolving").instanceId,
+      }),
+    ).toEqual({ ok: true });
+    await settle(() => s.perm("base").currentDP === 13_000);
+
+    expect(
+      s.engine.applyIntent(0, {
+        type: "digivolve",
+        permanentId: s.perm("base").permanentId,
+        instanceId: s.inst("nextEvolution").instanceId,
+      }),
+    ).toEqual({ ok: true });
+    await settle(
+      () =>
+        s.perm("base").topCard.cardId === "BT10-112" &&
+        s.state.pendingDecision === undefined &&
+        s.engine.activeWindowToken === undefined &&
+        s.engine.mainVerbContinuationsInFlight === 0,
+    );
+
+    s.state.phase = Phase.Breeding;
+    expect(
+      s.engine.applyIntent(0, { type: "moveFromBreeding", permanentId: s.perm("breedingRush").permanentId }),
+    ).toEqual({ ok: true });
+    await settle(() => observe(s.engine).canAttackUnsuspended(s.perm("breedingRush")));
+    expect(s.perm("breedingRush").currentDP).toBe(s.perm("breedingRush").baseDP + 2000);
+
+    s.state.phase = Phase.Main;
+    expect(
+      s.engine.applyIntent(0, {
+        type: "attack",
+        attackerPermanentId: s.perm("breedingRush").permanentId,
+        target: { kind: "permanent", permanentId: s.perm("unsuspendedOpponent").permanentId },
+      }),
+    ).toEqual({ ok: true });
+  });
 });
 
 describe("BT10-016 Jesmon (X Antibody) — KB Q&A rulings", () => {

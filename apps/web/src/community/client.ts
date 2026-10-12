@@ -1,3 +1,5 @@
+import type { DeckFormat } from "@aegis/shared/deckFormat";
+import type { CommunityRandomResult } from "@aegis/shared/decks/CommunityRandomResult";
 import type {
   CommunityDeck,
   CommunityDeckPage,
@@ -37,6 +39,10 @@ async function send(path: string, method: string, payload?: unknown): Promise<vo
 }
 
 export const communityApi = {
+  randomDeck: ({ format, betaAllowed }: { format: DeckFormat; betaAllowed: boolean }) =>
+    request<CommunityRandomResult>(
+      `/community/decks/random?${new URLSearchParams({ format, beta: String(betaAllowed) })}`,
+    ),
   browse: (query: CommunityBrowseQuery) => {
     const params = new URLSearchParams({ sort: query.sort, period: query.period, page: String(query.page) });
     if (query.search.trim()) params.set("q", query.search.trim());

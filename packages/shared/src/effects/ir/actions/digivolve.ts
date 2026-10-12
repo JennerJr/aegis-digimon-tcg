@@ -1,11 +1,11 @@
 // Digivolving, de-digivolving, and moving cards into a digivolution stack.
 
-import type { EffectDurationRef } from "../durations.js";
-import type { CardColor } from "../../../schema/enums.js";
-import type { Filter, Target } from "../filters/filter.js";
-import type { ZoneRef } from "../filters/zones.js";
-import type { Scaling } from "../predicates/scaling.js";
-import type { ActionBase } from "./base.js";
+import type { EffectDurationRef } from "#shared/effects/ir/durations";
+import type { CardColor } from "#shared/schema/enums";
+import type { Filter, Target } from "#shared/effects/ir/filters/filter";
+import type { ZoneRef } from "#shared/effects/ir/filters/zones";
+import type { Scaling } from "#shared/effects/ir/predicates/scaling";
+import type { ActionBase } from "#shared/effects/ir/actions/base";
 
 /**
  * Widen the DigiXros material source zones at BeforePayCost time (BT19-079 "from under your
@@ -190,7 +190,13 @@ export interface PlaceUnderAction extends ActionBase {
   /** Select a single exact count from battle-area permanents, their linked cards, and trash.
    * Battle-area permanents are relocated with their stacks; loose cards are placed normally.
    * Used by BT26-102's mixed Seven Code material cost. */
-  mixedSources?: { battleAreaPermanents?: boolean; linkedCards?: boolean; trash?: boolean; hand?: boolean };
+  mixedSources?: {
+    sourcePermanent?: boolean;
+    battleAreaPermanents?: boolean;
+    linkedCards?: boolean;
+    trash?: boolean;
+    hand?: boolean;
+  };
   /**
    * Place as DigiXros materials for the Digimon being played — the trigger source of the
    * enclosing `wouldBePlayed` Replacement — via the materials slot rather than the digivolution

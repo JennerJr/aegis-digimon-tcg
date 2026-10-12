@@ -1,5 +1,35 @@
 [
   {
+    "version": "1.25.0-beta",
+    "releasedAt": "2026-10-12",
+    "summaryKey": "releases.1.25.0-beta.summary",
+    "features": [
+      {
+        "textKey": "releases.1.25.0-beta.feature.rollback"
+      },
+      {
+        "textKey": "releases.1.25.0-beta.feature.decks"
+      }
+    ],
+    "fixes": [
+      {
+        "textKey": "releases.1.25.0-beta.fix.choices"
+      },
+      {
+        "textKey": "releases.1.25.0-beta.fix.engine"
+      },
+      {
+        "textKey": "releases.1.25.0-beta.fix.bot"
+      },
+      {
+        "textKey": "releases.1.25.0-beta.fix.presentation"
+      },
+      {
+        "textKey": "releases.1.25.0-beta.fix.access"
+      }
+    ]
+  },
+  {
     "version": "1.24.0-beta",
     "releasedAt": "2026-10-11",
     "summaryKey": "releases.1.24.0-beta.summary",

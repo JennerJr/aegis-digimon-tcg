@@ -11,6 +11,7 @@ export function communityDeckListing(deck: CommunityDeck): DeckListing {
     name: deck.name,
     color: colorKey(deck.colors[0]),
     blurb: deck.author.displayName,
+    community: { id: deck.id, author: { ...deck.author } },
     mainDeck: [...deck.mainDeck],
     eggDeck: [...deck.eggDeck],
     mainDeckArts: [...deck.mainDeckArts],

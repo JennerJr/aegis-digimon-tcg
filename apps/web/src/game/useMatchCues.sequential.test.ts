@@ -16,6 +16,7 @@ import {
   setEffectSpeed,
 } from "./pacing";
 import { TIMINGS } from "./timings";
+import { observeGateExpiry, type GateExpiry } from "@/game/match/presentationGate";
 
 vi.mock("../design/sound", () => ({ playSound: vi.fn<(kind: string) => void>() }));
 
@@ -1271,3 +1272,70 @@ it.each(["sequential", "current"] as const)(
     }
   },
 );
+
+describe("recovery following an evolution draw", () => {
+  it("keeps recovery behind its clause while the preceding draw waits for its card art", async () => {
+    setBasePacing(PACING_BY_STYLE.stacked);
+    const root = document.createElement("div");
+    root.dataset.drawPresentationKey = "1";
+    root.dataset.drawReady = "false";
+    document.body.append(root);
+    const steps: { id: string; phase: string; at: number }[] = [];
+    const expiries: GateExpiry[] = [];
+    const stopObserving = observeGateExpiry((expiry) => expiries.push(expiry));
+    const anchors = geometry();
+    const recovery: ServerEvent = {
+      ...triggered("AD1-002", "src-a", "a/recovery"),
+      timing: "WhenDigivolving",
+      description: "[When Digivolving] <Recovery +1 (Deck)>.",
+    };
+    const view = renderHook(
+      ({ fed }: ChainProps) =>
+        useMatchCues({
+          batches: fed,
+          state: BOARD,
+          viewerSeat: VIEWER,
+          mulliganOpen: false,
+          anchors,
+          onActionRejected: () => {},
+          presentationPacing: "sequential",
+          devProbe: {
+            onStep(event) {
+              steps.push({ id: event.step.id, phase: event.phase, at: Date.now() });
+            },
+          },
+        }),
+      { initialProps: { fed: [] as readonly ServerBatch[] } },
+    );
+    try {
+      await advance(0);
+      view.rerender({
+        fed: [
+          singleServerBatch([draw("evolution-draw")], 1),
+          singleServerBatch([recovery], 2),
+          singleServerBatch([{ kind: "securityRecovered", seat: 0, amount: 1 }], 3),
+          singleServerBatch([{ ...recovery, kind: "effectResolved" } as ServerEvent], 4),
+        ],
+      });
+      await advance(5000);
+      expect(clauseShown(view, "AD1-002")).toBe(false);
+      expect(view.result.current.securityFlights.size).toBe(0);
+      await advance(7000);
+      expect(expiries).toEqual([]);
+      const drawFinished = steps.find((step) => step.id === "draw-flight-1" && step.phase === "finished");
+      const clauseRead = steps.find((step) => step.id === "effect-unit-announce-1" && step.phase === "finished");
+      expect(drawFinished).toBeDefined();
+      expect(clauseRead).toBeDefined();
+      expect(clauseRead!.at).toBeGreaterThan(drawFinished!.at);
+      const recoveryFinished = steps.find(
+        (step) => step.id === "security-gain-flight-0-1" && step.phase === "finished",
+      );
+      expect(recoveryFinished).toBeDefined();
+      expect(recoveryFinished!.at).toBeGreaterThan(clauseRead!.at);
+      expect(view.result.current.decisionAnimationsPending).toBe(false);
+    } finally {
+      stopObserving();
+      root.remove();
+    }
+  });
+});

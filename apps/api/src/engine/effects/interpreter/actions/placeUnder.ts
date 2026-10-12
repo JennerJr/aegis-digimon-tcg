@@ -1,20 +1,26 @@
 // Moving cards into and out of a digivolution stack.
 
-import type { EffectContext } from "../../EffectContext.js";
-import { relocateByEffect } from "../costs.js";
-import { redirectDigivolutionTrash } from "../digivolutionTrashRedirect.js";
-import { unsupported } from "../errors.js";
-import { definitionMatches, hasExactName, matchNameOrTrait } from "../matching/definition.js";
+import type { EffectContext } from "#api/engine/effects/context/effectContext";
+import { relocateByEffect } from "#api/engine/effects/interpreter/costs";
+import { redirectDigivolutionTrash } from "#api/engine/effects/interpreter/digivolutionTrashRedirect";
+import { unsupported } from "#api/engine/effects/interpreter/errors";
+import { definitionMatches, hasExactName, matchNameOrTrait } from "#api/engine/effects/interpreter/matching/definition";
 import {
   knownCards,
   orderPermanentsForStackEnd,
   placeAtChosenStackEnd,
   placeAtStackEnd,
-} from "../placeAtChosenStackEnd.js";
-import { scaleFactor } from "../scaling.js";
-import { candidateLooseInstances, pickLoose, zoneList } from "../targeting/loose.js";
-import { candidatePermanents, effectiveTargetCount, resolvePermanentTargets } from "../targeting/permanents.js";
-import type { Action, Filter, Target, ZoneRef } from "@aegis/shared";
+} from "#api/engine/effects/interpreter/placeAtChosenStackEnd";
+import { scaleFactor } from "#api/engine/effects/interpreter/scaling";
+import { candidateLooseInstances, pickLoose, zoneList } from "#api/engine/effects/interpreter/targeting/loose";
+import {
+  candidatePermanents,
+  effectiveTargetCount,
+  resolvePermanentTargets,
+} from "#api/engine/effects/interpreter/targeting/permanents";
+import type { Action } from "@aegis/shared/effects/ir/actions/action";
+import type { Filter, Target } from "@aegis/shared/effects/ir/filters/filter";
+import type { ZoneRef } from "@aegis/shared/effects/ir/filters/zones";
 
 type MixedSourceCandidate = { instanceId: string; cardId: string; permanentId?: string };
 
@@ -32,11 +38,26 @@ function collectMixedSourceCandidates(
   const sources = action.mixedSources!;
   const candidates: MixedSourceCandidate[] = [];
   const owner = ctx.game.player(ctx.source.ownerSeat);
+  const sourcePermanent = sources.sourcePermanent ? ctx.source.permanent() : undefined;
+  if (
+    sourcePermanent !== undefined &&
+    !sourcePermanent.inBreeding &&
+    sourcePermanent.topCard !== undefined &&
+    sourcePermanent.permanentId !== destinationId &&
+    owner.battleArea.some((permanent) => permanent.permanentId === sourcePermanent.permanentId)
+  ) {
+    candidates.push({
+      instanceId: sourcePermanent.topCard.instanceId,
+      cardId: sourcePermanent.topCard.cardId,
+      permanentId: sourcePermanent.permanentId,
+    });
+  }
   if (sources.battleAreaPermanents || sources.linkedCards) {
     for (const permanent of owner.battleArea) {
       if (permanent.inBreeding || permanent.topCard === undefined) continue;
       if (
         permanent.permanentId !== destinationId &&
+        permanent.permanentId !== sourcePermanent?.permanentId &&
         sources.battleAreaPermanents &&
         mixedSourceMatches(ctx, action.target.filter, permanent.topCard)
       ) {

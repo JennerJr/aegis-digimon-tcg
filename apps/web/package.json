@@ -1,18 +1,18 @@
 {
   "name": "@aegis/web",
-  "version": "1.24.0-beta",
+  "version": "1.25.0-beta",
   "private": true,
   "description": "Aegis client: React + TypeScript + Vite. A pure function of synchronized state; sends intents, contains no rules.",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.build.json && vite build",
+    "build": "GOMEMLIMIT=512MiB tsc -p tsconfig.build.json --singleThreaded && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "GOMEMLIMIT=512MiB tsc --noEmit -p tsconfig.json --singleThreaded",
     "test": "vitest run --passWithNoTests",
     "pacing:measure": "PACING_MEASURE=1 vitest run test/pacing/pacing.measure.test.ts",
     "pacing:baseline": "PACING_MEASURE=1 PACING_UPDATE_BASELINE=1 vitest run test/pacing/pacing.measure.test.ts",
-    "test:browser": "NODE_OPTIONS=--max-old-space-size=2048 pnpm --filter @aegis/shared build && NODE_OPTIONS=--max-old-space-size=2048 pnpm --filter @aegis/api exec tsc -p tsconfig.dev.json --noCheck && NODE_OPTIONS=--max-old-space-size=2048 playwright test"
+    "test:browser": "pnpm --filter @aegis/shared build && pnpm --filter @aegis/api build && NODE_OPTIONS=--max-old-space-size=2048 playwright test"
   },
   "dependencies": {
     "@aegis/shared": "workspace:*",

@@ -1,3 +1,4 @@
+import { RollbackControls } from "@/game/RollbackControls";
 /* The arena itself: the opponent's bar, the narration and the ticker, the field's three
    columns, the player's dock, and the free-floating cue layers over all of it.
 
@@ -351,6 +352,17 @@ export function BoardStage({
             }
             deckCount={shownOpponent.deckCount}
             trashCount={shownOpponent.trash.length}
+            rollbackControls={
+              room && !spectating ? (
+                <RollbackControls
+                  state={state}
+                  room={room}
+                  seat={viewerSeat}
+                  menu={layout.portraitArena}
+                  compact={layout.narrowGameLayout}
+                />
+              ) : undefined
+            }
             portraitArena={layout.portraitArena}
             narrowGameLayout={layout.narrowGameLayout}
             skippable={cues.presenting || cues.decisionAnimationsPending}

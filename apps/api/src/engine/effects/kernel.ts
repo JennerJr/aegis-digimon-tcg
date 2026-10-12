@@ -126,6 +126,7 @@ function inheritedHostInvalidAtDeletion(ctx: EffectContext): boolean {
  * are deferred to the inherited-effects and advanced-mechanics subsystems.
  */
 export function passesPlacementGuard(effect: Effect, ctx: EffectContext): boolean {
+  if (effect.isActivatedConsequence === true) return true;
   if (wasHiddenAtDeletion(ctx)) return false;
   // CR 15-3-1: cards under a Tamer confer no inherited effects. Once deletion
   // moves that host to trash, generic stack membership cannot prove a Digimon

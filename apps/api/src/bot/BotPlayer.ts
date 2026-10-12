@@ -141,7 +141,7 @@ export class BotPlayer {
     private readonly seat: Seat,
     private readonly state: GameState,
     private readonly sendIntent: (intent: Intent) => IntentResult | void,
-    options: BotOptions = {},
+    private readonly options: BotOptions = {},
   ) {
     this.minThinkMs = options.minThinkMs ?? DEFAULT_MIN_ACTION_DELAY_MS;
     this.maxThinkMs = Math.max(options.maxThinkMs ?? DEFAULT_MAX_ACTION_DELAY_MS, this.minThinkMs);
@@ -168,6 +168,27 @@ export class BotPlayer {
   }
 
   /** Stop this seat and settle bounded inference waits without issuing a fallback. */
+  restartAfterRollback(state: GameState): BotPlayer {
+    return new BotPlayer(this.seat, state, this.sendIntent, this.options);
+  }
+
+  resumeAfterRollback(): void {
+    if (this.state.phase === Phase.Breeding)
+      this.onEvent({
+        kind: "phaseChanged",
+        phase: Phase.Breeding,
+        turnSeat: this.state.turnSeat,
+        turnCount: this.state.turnCount,
+      });
+    if (this.state.phase === Phase.Main)
+      this.onEvent({
+        kind: "phaseChanged",
+        phase: Phase.Main,
+        turnSeat: this.state.turnSeat,
+        turnCount: this.state.turnCount,
+      });
+  }
+
   dispose(): void {
     this.disposed = true;
     for (const cancel of this.cancelPolicyDecisions) cancel();

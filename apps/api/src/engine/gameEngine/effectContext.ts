@@ -1,3 +1,6 @@
+import { resolveDerivedDuringAttackStep } from "#api/engine/gameEngine/resolveDerivedDuringAttackStep";
+import type { ArmedSubTrigger } from "#api/engine/gameEngine/subTriggerIdentity";
+import type { CollectedEffect } from "#api/engine/effects/collect";
 import { clearPreparedDigiXrosPlay, preparedDigiXrosMaterials } from "./timing/payCost.js";
 import { retirePendingAttackWatchers } from "./subTriggers.js";
 import { isTimingActivationDisabled } from "../effects/timingActivation.js";
@@ -525,6 +528,7 @@ export function engineConsultDigivolutionTrashRedirect(
  * seat-keyed form selection verbs use.
  */
 export function buildPrimitives(engine: GameEngine): Primitives {
+  const attackStepParents: { watchers: ReadonlySet<ArmedSubTrigger>; nested: ReadonlySet<CollectedEffect> }[] = [];
   // `combat` is assigned after the primitives are built (the controller is itself
   // wired with engine engine's fireTiming seam), so expose it lazily via a getter; the
   // attack verbs only dereference it at call time, by which point it is set.
@@ -586,7 +590,12 @@ export function buildPrimitives(engine: GameEngine): Primitives {
     // `flushDeferredTimingWindows`'s own depth guard passes. `activeWindowToken` is
     // deliberately left set: ending the ordering effect's window here would discard the
     // pending pools it still needs after combat (Q3944).
-    settleBetweenAttackSteps: () => settleBetweenEffects(engine),
+    settleBetweenAttackSteps: async () => {
+      await settleBetweenEffects(engine);
+      const parents = attackStepParents.at(-1);
+      if (parents !== undefined)
+        await resolveDerivedDuringAttackStep({ engine, olderWatchers: parents.watchers, olderNested: parents.nested });
+    },
     runAttackSteps: async (body) => {
       // CR §11-1: an attack ordered by an effect interrupts that effect. Triggers arising in
       // Counter Timing, the block window, the battle and End of Attack each resolve as their
@@ -601,11 +610,16 @@ export function buildPrimitives(engine: GameEngine): Primitives {
       engine.optionResolutionDepth = 0;
       engine.optionMainDepth = 0;
       engine.attackStepPauseDepth += 1;
+      attackStepParents.push({
+        watchers: new Set(engine.pendingWindowSubTriggers),
+        nested: new Set(engine.pendingNestedTimingEffects),
+      });
       try {
         await flushDeferredTimingWindows(engine);
         await body();
         await settleBetweenEffects(engine);
       } finally {
+        attackStepParents.pop();
         engine.attackStepPauseDepth -= 1;
         engine.effectResolutionDepth = pausedDepth;
         engine.optionResolutionDepth = pausedOptionDepth;

@@ -149,6 +149,7 @@ type AccountRow = {
 };
 
 export class AccountStore {
+  private lastMagicLinkCleanup = 0;
   // Exposed so sibling domain stores (see src/tournaments/participants) can share one connection
   // pool and one migration run instead of opening a second pool against the same database.
   readonly pool: Pool;
@@ -457,6 +458,44 @@ export class AccountStore {
         throw error;
       }
     });
+  }
+
+  async allowMagicLinkRequest({
+    ip,
+    email,
+    now = Date.now(),
+  }: {
+    ip: string;
+    email: string;
+    now?: number;
+  }): Promise<boolean> {
+    await this.ensureReady();
+    if (now - this.lastMagicLinkCleanup >= 60_000) {
+      this.lastMagicLinkCleanup = now;
+      await this.pool.query("DELETE FROM magic_links WHERE expires_at <= $1", [now]);
+      await this.pool.query("DELETE FROM magic_link_request_limits WHERE window_started_at <= $1", [now - 86_400_000]);
+    }
+    const windowMs = 900_000;
+    for (const [key, capacity] of [
+      [`ip:${ip}`, 10],
+      [`email:${email.trim().toLowerCase()}`, 3],
+    ] as const) {
+      const keyHash = hash(key);
+      await this.pool.query(
+        "INSERT INTO magic_link_request_limits (key_hash, window_started_at, attempts) VALUES ($1,$2,0) ON CONFLICT (key_hash) DO NOTHING",
+        [keyHash, now],
+      );
+      const result = await this.pool.query(
+        `UPDATE magic_link_request_limits SET
+           attempts=CASE WHEN window_started_at <= $2 THEN 1 ELSE attempts+1 END,
+           window_started_at=CASE WHEN window_started_at <= $2 THEN $3 ELSE window_started_at END
+         WHERE key_hash=$1 AND (window_started_at <= $2 OR attempts < $4)
+         RETURNING key_hash`,
+        [keyHash, now - windowMs, now, capacity],
+      );
+      if (!result.rowCount) return false;
+    }
+    return true;
   }
 
   async createMagicLink(email: string): Promise<{ token: string; expiresAt: number }> {

@@ -40,29 +40,37 @@ export class ScenarioPage {
     fixture: ScenarioFixture,
     speed: "normal" | "slow" = "normal",
     breeding: "end" | "move" | "none" = fixture.turnSeat === 0 ? "end" : "none",
+    allowRollback = false,
   ) {
     if (!this.useFixture) throw new Error("This ScenarioPage has no fixture server");
     const references = this.useFixture(fixture);
-    await this.open("local-fixture", speed, breeding);
+    await this.open("local-fixture", speed, breeding, allowRollback);
     return references;
   }
   /** `none`: the scenario opens on the opponent's turn, or the engine passes this Breeding phase itself. */
-  async open(id: string, speed: "normal" | "slow" = "normal", breeding: "end" | "move" | "none" = "end") {
+  async open(
+    id: string,
+    speed: "normal" | "slow" = "normal",
+    breeding: "end" | "move" | "none" = "end",
+    allowRollback = false,
+  ) {
     this.speed = speed;
     await this.page.addInitScript(
-      ({ id: scenarioId, speed: effectSpeed, deck }) => {
+      ({ id: scenarioId, speed: effectSpeed, deck, allowRollback: rollbackAllowed }) => {
         localStorage.setItem("aegis:locale", "en");
         localStorage.setItem("aegis.effect-speed", effectSpeed);
         localStorage.setItem("aegis.action-confirmation.enabled", "false");
         localStorage.setItem("aegis.skip-end-turn-confirmation", "true");
         window.browserTestOptions = {
           displayName: "Scenario E2E",
+          allowRollback: rollbackAllowed,
           seed: 1,
           deck,
+          botDeck: deck,
           devScenario: scenarioId as Window["browserTestOptions"]["devScenario"],
         };
       },
-      { id, speed, deck: RED_DECK },
+      { id, speed, deck: RED_DECK, allowRollback },
     );
     await this.page.goto("/e2e/harness.html");
     if (breeding === "move") {
@@ -71,7 +79,13 @@ export class ScenarioPage {
       await slot.focus();
       await slot.press("Enter");
     } else if (breeding === "end") await this.page.getByRole("button", { name: /^end breeding$/i }).click();
-    else await this.page.waitForFunction(() => typeof window.browserTestSnapshot === "function");
+    else
+      await this.page.waitForFunction(
+        () =>
+          typeof window.browserTestSnapshot === "function" &&
+          window.browserTestSnapshot().players?.length === 2 &&
+          window.browserTestPresentation().events.some((event) => event.kind === "matchStarted"),
+      );
   }
   snapshot() {
     return this.page.evaluate(() => window.browserTestSnapshot());
@@ -88,6 +102,7 @@ export class ScenarioPage {
     await card.press("Enter");
   }
   async play(name: string, kind: "Digimon" | "Option" | "Tamer") {
+    await expect(this.page.getByRole("button", { name: /^end turn$/i })).toBeEnabled();
     await this.hand(name);
     await this.page.getByRole("button", { name: `Play ${kind}`, exact: true }).click();
   }
@@ -430,13 +445,13 @@ export async function openFixturePage(page: Page, fixture: ScenarioFixture): Pro
   useBrowserFixture(fixture);
   const human = CATALOG_DECKS.find((deck) => deck.deckId === "bt26-dgo-2026-08-28-7-chronomon")!;
   await page.addInitScript(
-    ({ deck }) => {
+    ({ deck, botDeck }) => {
       localStorage.setItem("aegis:locale", "en");
       localStorage.setItem("aegis.action-confirmation.enabled", "false");
       localStorage.setItem("aegis.skip-end-turn-confirmation", "true");
-      window.browserTestOptions = { displayName: "Fixture E2E", seed: 1, deck, devScenario: "local-fixture" };
+      window.browserTestOptions = { displayName: "Fixture E2E", seed: 1, deck, botDeck, devScenario: "local-fixture" };
     },
-    { deck: { mainDeck: [...human.decklist.mainDeck], eggDeck: [...human.decklist.eggDeck] } },
+    { deck: { mainDeck: [...human.decklist.mainDeck], eggDeck: [...human.decklist.eggDeck] }, botDeck: RED_DECK },
   );
   await page.goto("/e2e/harness.html");
 }

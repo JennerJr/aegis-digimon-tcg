@@ -235,13 +235,16 @@ export async function runPendingTimingWindow(engine: GameEngine, pending: readon
   const excludeNestedPending = new Set(engine.pendingNestedTimingEffects);
   try {
     await withTriggeredMutations(engine, () =>
-      runTiming(
-        EffectTiming.OnDestroyedAnyone,
-        effectEnvironment(engine, {}),
-        resolutionDeps(engine, () => [], {
-          extraPending: pending,
-          excludeNestedPending,
-        }),
+      withPendingPoolDrain(engine, wasOutermostWindow, () =>
+        runTiming(
+          EffectTiming.OnDestroyedAnyone,
+          effectEnvironment(engine, {}),
+          resolutionDeps(engine, () => [], {
+            outermost: wasOutermostWindow,
+            extraPending: pending,
+            excludeNestedPending,
+          }),
+        ),
       ),
     );
   } finally {

@@ -105,6 +105,7 @@ function renderCombatGame(kind: "alliance" | "block" | "counter" = "alliance", m
   ]);
   const send = vi.fn<(type: string, payload: unknown) => void>();
   const room = {
+    state,
     connection: { isOpen: true },
     send: (type: string, payload: unknown) => (type === ANIMATION_SPEED_CHANNEL ? undefined : send(type, payload)),
     onMessage: () => () => {},
@@ -141,14 +142,14 @@ it("selects only server-offered Alliance allies on the field", () => {
   expect(screen.getByRole("region", { name: "Alliance window" })).toBeTruthy();
   fireEvent.click(permanent("ally"));
   fireEvent.click(screen.getByRole("button", { name: /Use Alliance/i }));
-  expect(send).toHaveBeenCalledWith("respondAlliance", { allyPermanentId: "ally" });
+  expect(send).toHaveBeenCalledWith("respondAlliance", { allyPermanentId: "ally", rollbackRevision: 0 });
   expect(send).toHaveBeenCalledTimes(1);
 });
 
 it("passes Alliance without choosing a Digimon", () => {
   const { send } = renderCombatGame();
   fireEvent.click(screen.getByRole("button", { name: "Pass" }));
-  expect(send).toHaveBeenCalledWith("respondAlliance", { allyPermanentId: undefined });
+  expect(send).toHaveBeenCalledWith("respondAlliance", { allyPermanentId: undefined, rollbackRevision: 0 });
 });
 
 it("returns focus from board inspection to the unanswered evolution-cost choice", () => {
@@ -372,7 +373,7 @@ it.each([false, true])("uses server-authorized blockers on the field and preserv
   expect(Boolean(decline)).toBe(!mustBlock);
   expect(within(rail).queryByRole("button", { name: /MetalGreymon/ })).toBeNull();
   fireEvent.click(permanent("ally"));
-  expect(send).toHaveBeenCalledWith("declareBlock", { blockerPermanentId: "ally" });
+  expect(send).toHaveBeenCalledWith("declareBlock", { blockerPermanentId: "ally", rollbackRevision: 0 });
 });
 
 it("routes a field Counter picked on the board to the exact GameScreen intent", () => {
@@ -382,7 +383,11 @@ it("routes a field Counter picked on the board to the exact GameScreen intent", 
   expect(send).not.toHaveBeenCalled();
   expect(screen.getByRole("dialog", { name: "Counter timing" }).getAttribute("data-prompt-surface")).toBe("left");
   fireEvent.click(screen.getByRole("button", { name: "Activate" }));
-  expect(send).toHaveBeenCalledWith("respondCounter", { sourceInstanceId: "ineligible-top", effectKey: "second" });
+  expect(send).toHaveBeenCalledWith("respondCounter", {
+    sourceInstanceId: "ineligible-top",
+    effectKey: "second",
+    rollbackRevision: 0,
+  });
 });
 
 it("puts the lone take-attack action on the left when no server-authorized blocker remains", () => {

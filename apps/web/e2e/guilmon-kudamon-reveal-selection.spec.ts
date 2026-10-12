@@ -18,6 +18,7 @@ for (const viewport of [
       });
       await openFixturePage(page, fixtureGuilmonXReveal);
       await page.getByRole("button", { name: /^end breeding$/i }).click();
+      await expect(page.getByRole("button", { name: /^end turn$/i })).toBeEnabled();
       const card = page.getByTestId("hand").getByRole("button", { name: "Select Guilmon (X Antibody)", exact: true });
       await card.focus();
       await card.press("Enter");

@@ -632,6 +632,7 @@ export function presentServerBatch({
   const { completion: combatCompletionGate, landedByPermanent } = enqueueCombatImpact({
     clashScenes,
     beaten,
+    after: battleCause ?? undefined,
     setFieldClash,
     setCombatImpactIds,
     enqueue,

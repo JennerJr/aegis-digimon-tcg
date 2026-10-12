@@ -78,6 +78,7 @@ it.each([
     Reflect.deleteProperty(clientState.players[1]!, "hand");
     const send = vi.fn<(type: string, payload: unknown) => void>();
     const room = {
+      state: clientState,
       connection: { isOpen: true },
       send: (type: string, payload: unknown) => (type === ANIMATION_SPEED_CHANNEL ? undefined : send(type, payload)),
       onMessage: () => () => {},
@@ -114,6 +115,7 @@ it.each([
     expect(within(partners[0]!).getByRole("img", { name: /^Alphamon$/ })).toBeTruthy();
     fireEvent.click(partners[0]!);
     expect(send).toHaveBeenCalledExactlyOnceWith("respondCounter", {
+      rollbackRevision: 0,
       sourceInstanceId: aceId,
       effectKey: effectKey(partnerId),
     });

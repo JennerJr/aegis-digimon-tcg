@@ -8,7 +8,7 @@ test.use({
 });
 
 type AudioProbe = { players: HTMLAudioElement[]; contexts: number };
-type ProbeWindow = Window & { operaAudioProbe: AudioProbe };
+type ProbeWindow = typeof window & { operaAudioProbe: AudioProbe };
 
 test("Opera tablet compatibility plays the actual music and finite cues through native media", async ({ page }) => {
   await page.addInitScript(() => {
@@ -19,7 +19,7 @@ test("Opera tablet compatibility plays the actual music and finite cues through 
       const player = new NativeAudio(src);
       probe.players.push(player);
       return player;
-    } as typeof Audio;
+    } as unknown as typeof Audio;
     window.AudioContext = class extends AudioContext {
       constructor(options?: AudioContextOptions) {
         super(options);

@@ -58,6 +58,7 @@ function arena(decision?: DecisionRequest) {
   state.players[0]!.battleArea.push(base);
   const send = vi.fn<(type: string, payload: unknown) => void>();
   const room = {
+    state,
     connection: { isOpen: true },
     send: (type: string, payload: unknown) => (type === ANIMATION_SPEED_CHANNEL ? undefined : send(type, payload)),
     onMessage: () => () => {},
@@ -155,7 +156,11 @@ it("retains the server-projected link target flow", () => {
   fireEvent.click(within(screen.getByRole("dialog", { name: "Greymon" })).getByRole("button", { name: "Link" }));
   expect(screen.queryByRole("dialog", { name: "Greymon" })).toBeNull();
   fireEvent.click(base);
-  expect(send).toHaveBeenCalledWith("linkCard", { instanceId: "hand-greymon", targetPermanentId: "base-agumon" });
+  expect(send).toHaveBeenCalledWith("linkCard", {
+    instanceId: "hand-greymon",
+    targetPermanentId: "base-agumon",
+    rollbackRevision: 0,
+  });
 });
 
 it("keeps local digivolution selection after inspecting a field card without showing magnifiers", () => {

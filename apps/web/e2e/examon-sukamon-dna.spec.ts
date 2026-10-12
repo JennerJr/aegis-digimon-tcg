@@ -22,7 +22,10 @@ async function awaitHumanTurn(scenario: ScenarioPage, done: (state: Snapshot) =>
       { timeout: 60_000 },
     )
     .toBe(true);
-  await scenario.resolveUntil(done, () => ({ accept: false }));
+  await scenario.resolveUntil(done, (decision) => ({
+    accept: false,
+    decisionBudgetMs: decision.sourceCardId === "EX13-021" ? 10_000 : undefined,
+  }));
 }
 
 for (const transformed of [true, false]) {
@@ -32,6 +35,8 @@ for (const transformed of [true, false]) {
   }) => {
     test.setTimeout(150_000);
     await scenario.openFixture(transformed ? fixtureSukamonDnaMaterials : fixtureSukamonDnaControl);
+    await awaitHumanTurn(scenario, (s) => s.turnSeat === 0 && s.phase === "Breeding" && !s.pendingDecision);
+    await page.getByRole("button", { name: /^end breeding$/i }).click();
     await scenario.resolveUntil((s) => s.turnSeat === 0 && s.phase === "Main" && !s.pendingDecision);
     const initial = await scenario.snapshot();
     const examon = initial.players[0]!.hand.find((c) => c.cardId === "EX13-045")!;
@@ -86,7 +91,11 @@ for (const transformed of [true, false]) {
           s.players[0]!.battleArea.some((p) => p.topCard.cardId === "EX13-045") &&
           !s.pendingDecision &&
           !s.combatWindow,
-        () => ({ accept: false }),
+        (decision) => ({
+          accept: false,
+          decisionBudgetMs:
+            decision.sourceCardId === "EX13-045" || decision.sourceCardId === "EX13-021" ? 10_000 : undefined,
+        }),
       );
       const final = await scenario.snapshot();
       const result = final.players[0]!.battleArea.find((p) => p.topCard.cardId === "EX13-045")!;

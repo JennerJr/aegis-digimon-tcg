@@ -19462,8 +19462,8 @@
             "target": {
               "filter": {
                 "controller": "mine",
+                "kind": ["Digimon"],
                 "nameOrTrait": [
-                  { "tokens": ["Takato Matsuki"], "match": "nameExact" },
                   { "tokens": ["Growlmon"], "match": "nameExact" },
                   { "tokens": ["WarGrowlmon"], "match": "nameExact" }
                 ]
@@ -19471,7 +19471,7 @@
               "count": 3,
               "requiredNamesExact": ["Takato Matsuki", "Growlmon", "WarGrowlmon"]
             },
-            "mixedSources": { "battleAreaPermanents": true, "trash": true },
+            "mixedSources": { "sourcePermanent": true, "trash": true },
             "destination": { "filter": { "boundRef": "bt12_089_host" }, "count": 1 },
             "underSelectionRef": "bt12_089_host",
             "position": "bottom",
@@ -151136,6 +151136,7 @@
           {
             "kind": "SubTrigger",
             "event": "whenSuspended",
+            "sourceFilter": { "isSelfRef": true },
             "actions": [
               {
                 "kind": "Unsuspend",
@@ -204683,20 +204684,6 @@
             "from": ["security"],
             "payCost": false,
             "optional": true
-          },
-          {
-            "kind": "Restrict",
-            "target": {
-              "filter": {
-                "controller": "mine",
-                "kind": ["Digimon"],
-                "nameOrTrait": [{ "tokens": ["Dark Masters"], "match": "trait" }]
-              },
-              "count": 1,
-              "sameTarget": true
-            },
-            "restriction": "digivolve",
-            "duration": "permanent"
           },
           {
             "kind": "DelayedDeletePlayed",

@@ -6,7 +6,7 @@ test("a placed Parkour ends the waiver; a blue/green Tamer permits the second co
   await scenario.openFixture(fixtureParkourSequential, "normal", "none");
   await scenario.resolveUntil((s) => s.phase === "Main" && !s.pendingDecision);
   // Equivalent starting copies need explicit instance selectors to keep the sequential proof deterministic.
-  const first = scenario.page.locator('[data-hand-instance-id="first"]');
+  const first = scenario.page.locator(`[data-hand-instance-id="${fixtureInstanceId("first-card")}"]`);
   await first.focus();
   await first.press("Enter");
   await scenario.page.getByRole("button", { name: "Play Option", exact: true }).click();

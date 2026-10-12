@@ -1,7 +1,11 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "paths": { "@/*": ["../src/*"] },
+    "paths": {
+      "@/*": ["../src/*"],
+      "@e2e/*": ["./*"],
+      "@api-fixtures/*": ["../../api/src/engine/scenarios/*"]
+    },
     "noEmit": true,
     "allowJs": true,
     "jsx": "react-jsx",

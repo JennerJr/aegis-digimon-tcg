@@ -21,7 +21,7 @@ for (const skipReturn of [false, true]) {
     const before = await scenario.snapshot();
     const routes = JSON.parse(before.combatWindow!.eligibleCountersJson) as { instanceId: string; effectKey: string }[];
     expect(routes).toHaveLength(3);
-    const route = routes.find((c) => c.effectKey.includes('"metal-a"'))!;
+    const route = routes.find((c) => c.effectKey.includes(JSON.stringify(fixtureInstanceId("metal-a-card"))))!;
     const ace = page.locator(`[data-hand-instance-id="${route.instanceId}"]`);
     await ace.focus();
     await ace.press("Enter");

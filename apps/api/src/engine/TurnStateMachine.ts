@@ -26,6 +26,7 @@ export type MainPhaseEnd = "crossed" | "passed";
 const MAX_END_TURN_POSTPONEMENTS = 100;
 
 export interface TurnFlowHooks {
+  beforeTurn?: (turn: number) => Promise<void> | void;
   /** Run the effect stack for a timing window (effect-stack-resolution subsystem). */
   fireTiming(timing: EffectTiming): Promise<void>;
 
@@ -177,6 +178,9 @@ export class TurnStateMachine {
 
   /** One full turn: four phases followed by turn-end processing. Visible for testing. */
   async runTurn(): Promise<void> {
+    const turnStart = this.hooks.beforeTurn?.(this.state.turnCount + 1);
+    if (turnStart) await turnStart;
+    if (this.hooks.isGameOver()) return;
     let activePhaseCompleted = await this.activePhase();
     if (this.hooks.isGameOver()) return;
     let drawPhaseRan = false;

@@ -1,3 +1,4 @@
+import { isDeckFormat } from "@aegis/shared/deckFormat";
 import {
   CardColor,
   COMMUNITY_MODERATION_ACTIONS,
@@ -68,6 +69,30 @@ export function installCommunityDeckRoutes({
     route(async (req, res) => {
       const viewer = await session(req);
       res.json(await store.list({ ...parseListQuery(req.query), viewerId: viewer?.account.id }));
+    }),
+  );
+
+  const limitRandom = tokenBucketLimiter({ capacity: 5, refillMs: 5_000 });
+  let randomInFlight = 0;
+  app.get(
+    "/community/decks/random",
+    route(async (req, res) => {
+      const format = req.query.format ?? "standard";
+      if (!isDeckFormat(format) || ![undefined, "true", "false"].includes(req.query.beta as string | undefined)) {
+        res.sendStatus(400);
+        return;
+      }
+      if (!limitRandom(req.ip ?? "unknown") || randomInFlight >= 2) {
+        res.sendStatus(429);
+        return;
+      }
+      randomInFlight += 1;
+      try {
+        res.set("Cache-Control", "no-store");
+        res.json(await store.randomDeck({ format, betaAllowed: req.query.beta === "true" }));
+      } finally {
+        randomInFlight -= 1;
+      }
     }),
   );
 

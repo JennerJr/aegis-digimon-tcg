@@ -13,6 +13,7 @@ export function AttackArrow({
   tracking = false,
   attackKey,
   sourcePermanentId,
+  targetKeys,
   clock,
 }: {
   from: ArrowPoint;
@@ -21,6 +22,7 @@ export function AttackArrow({
   tracking?: boolean;
   attackKey?: string;
   sourcePermanentId?: string;
+  targetKeys?: readonly string[];
   clock?: AttackArrowClock;
 }) {
   const revealId = useId();
@@ -36,6 +38,7 @@ export function AttackArrow({
       focusable="false"
       data-attack-key={attackKey}
       data-attack-source={sourcePermanentId}
+      data-attack-targets={targetKeys ? JSON.stringify(targetKeys) : undefined}
       style={{
         position: "absolute",
         inset: 0,

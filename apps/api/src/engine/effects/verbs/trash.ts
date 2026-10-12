@@ -54,7 +54,7 @@ export function createTrashVerbs(pc: PrimitivesContext) {
         hostOfStackInstance(state, id)?.hostPermanentId ??
         hostOfLinkedInstance(state, id) ??
         permanentByTopInstance(id);
-      return host === undefined || !isRestricted(host, "beTrashed");
+      return opts?.byRule === true || host === undefined || !isRestricted(host, "beTrashed");
     });
     const moved: CardInstance[] = [];
     // SubTrigger bus (System B): "when a link card is trashed" (whenLinkTrashed) fires for each

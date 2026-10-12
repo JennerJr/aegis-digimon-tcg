@@ -124,13 +124,12 @@ export function securityReplayFixture() {
       stateVersion: 2,
     },
   ];
-  const security = {
-    ...structuredClone(attacker.topCard),
+  const security = Object.assign(structuredClone(attacker.topCard), {
     instanceId: "security-card",
     ownerSeat: 1 as const,
     cardId: "BT1-026",
     artId: "BT1-026",
-  };
+  });
   for (const frame of replay.frames.slice(2)) {
     frame.state.players[0]!.battleArea = [] as never;
     frame.state.players[0]!.trash.push(structuredClone(attacker.topCard));

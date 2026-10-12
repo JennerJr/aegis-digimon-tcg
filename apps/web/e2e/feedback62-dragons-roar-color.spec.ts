@@ -14,12 +14,9 @@ for (const mode of ["keep", "move", "normal-colors"] as const) {
   }) => {
     const normalColors = mode === "normal-colors";
     await scenario.openFixture(
-      fixtureVariant(
-        preparedFixtures,
-        normalColors ? "dragons-roar-normal-colors" : "dragons-roar-breeding",
-        "normal",
-        mode === "move" ? "move" : "end",
-      ),
+      fixtureVariant(preparedFixtures, normalColors ? "dragons-roar-normal-colors" : "dragons-roar-breeding"),
+      "normal",
+      mode === "move" ? "move" : "end",
     );
     await scenario.resolveUntil((state) => state.phase === "Main" && !state.pendingDecision);
     const before = await scenario.snapshot();

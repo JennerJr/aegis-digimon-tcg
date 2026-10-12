@@ -4,6 +4,7 @@ import type { ReplayDivergence, ReplayInput, ReplayRecord, ReplaySite } from "./
 import "../../cards/index.js";
 
 export interface RunReplayOptions {
+  stopBeforeTurn?: number;
   /**
    * Stop before applying `inputs[untilInput]`, once the engine has gone idle, so the state can be
    * inspected as it stood when that input arrived.
@@ -20,6 +21,11 @@ export interface RunReplayOptions {
 }
 
 export interface ReplayRun {
+  activate(hooks: import("#api/engine/gameEngine/types").GameEngineHooks): void;
+  engineEvents: number;
+  pendingRequest?: import("@aegis/shared").DecisionRequest;
+  reachedTurn?: number;
+  resumeBatchOffset: number;
   engine: GameEngine;
   state: GameState;
   /** How many inputs were applied. */
@@ -65,6 +71,11 @@ export async function runReplay(record: ReplayRecord, options: RunReplayOptions 
   const limit = Math.min(options.untilInput ?? inputs.length, inputs.length);
   const divergences: ReplayDivergence[] = [];
 
+  let liveHooks: import("#api/engine/gameEngine/types").GameEngineHooks | undefined;
+  let pendingRequest: import("@aegis/shared").DecisionRequest | undefined;
+  let resumeTurn: (() => void) | undefined;
+  let reachedTurn: number | undefined;
+  let resumeBatchOffset = 0;
   let emitted = 0;
   let progress = 0;
   let cursor = 0;
@@ -112,15 +123,28 @@ export async function runReplay(record: ReplayRecord, options: RunReplayOptions 
   const engine: GameEngine = new GameEngine(state, {
     seed: record.seed,
     ...(record.firstSeat !== undefined ? { firstSeat: record.firstSeat } : {}),
-    requestDecision: () => {
+    beforeTurn: (turn) => {
+      if (liveHooks) return liveHooks.beforeTurn?.(turn);
+      if (turn !== options.stopBeforeTurn) return;
+      reachedTurn = turn;
+      resumeBatchOffset = batch && batch.emitted > 0 ? 1 : 0;
+      return new Promise<void>((resolve) => {
+        resumeTurn = resolve;
+      });
+    },
+    requestDecision: (seat, request) => {
+      if (liveHooks) return liveHooks.requestDecision(seat, request);
+      pendingRequest = request;
       progress += 1;
       applyDueAt("decisionRequest");
     },
-    onBothReady: () => applyDueAt("bothReady"),
-    onActionSettled: () => {
+    onBothReady: () => (liveHooks ? liveHooks.onBothReady?.() : applyDueAt("bothReady")),
+    onActionSettled: (seat, type) => {
+      if (liveHooks) return liveHooks.onActionSettled?.(seat, type);
       progress += 1;
     },
     emit: (event) => {
+      if (liveHooks) return liveHooks.emit(event);
       emitted += 1;
       progress += 1;
       if (!batch) {
@@ -271,6 +295,14 @@ export async function runReplay(record: ReplayRecord, options: RunReplayOptions 
   }
   await waitForIdle(() => progress);
   return {
+    activate(hooks) {
+      liveHooks = hooks;
+      resumeTurn?.();
+    },
+    engineEvents: emitted,
+    pendingRequest: state.pendingDecision ? pendingRequest : undefined,
+    reachedTurn,
+    resumeBatchOffset,
     engine,
     state,
     applied: cursor,

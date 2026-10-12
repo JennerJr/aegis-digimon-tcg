@@ -66,6 +66,7 @@ function withQueueFilters(options: AegisJoinOptions): AegisJoinOptions {
   return {
     ...options,
     matchTimer: options.matchTimer === true,
+    allowRollback: options.allowRollback === true,
     bestOf: options.bestOf === 3 ? 3 : 1,
     format,
     unlimited: formatIsUnlimited(format),
@@ -78,6 +79,7 @@ export function connectionSlot(room: AegisRoom): RoomSlot {
 
 export class AegisConnectionRouter {
   private readonly clients = new Map<DeploymentSlot, ColyseusClientPort>();
+  private readonly roomsById = new Map<string, WeakRef<AegisRoom>>();
   private readonly slotByRoomId = new Map<string, DeploymentSlot>();
 
   constructor(private readonly dependencies: RouterDependencies) {}
@@ -188,6 +190,8 @@ export class AegisConnectionRouter {
   }
 
   async joinWithBot(roomId: string, botDeckId?: string): Promise<void> {
+    const room = this.roomsById.get(roomId)?.deref();
+    if (!room) throw new Error("Bot join requires a connected room");
     const knownSlot = this.slotByRoomId.get(roomId);
     const slot = knownSlot ?? (await this.dependencies.loadManifest()).active.slot;
     const { http } = this.dependencies.endpointForSlot(slot);
@@ -195,7 +199,7 @@ export class AegisConnectionRouter {
     const response = await this.fetch(`${http}/bot/join`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId, botDeckId }),
+      body: JSON.stringify({ roomId, botDeckId, reconnectionToken: room.reconnectionToken }),
     });
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
@@ -216,6 +220,7 @@ export class AegisConnectionRouter {
   private remember(room: AegisRoom, slot: DeploymentSlot): AegisRoom {
     roomSlots.set(room, slot);
     this.slotByRoomId.set(room.roomId, slot);
+    this.roomsById.set(room.roomId, new WeakRef(room));
     return room;
   }
 
@@ -311,8 +316,11 @@ function getLegacyClient(): Client {
   return legacyClient;
 }
 
+const legacyRoomsById = new Map<string, WeakRef<AegisRoom>>();
+
 function rememberLegacy(room: AegisRoom): AegisRoom {
   roomSlots.set(room, "legacy");
+  legacyRoomsById.set(room.roomId, new WeakRef(room));
   return room;
 }
 
@@ -347,10 +355,12 @@ export async function resumeReconnectSession(session: ReconnectSession): Promise
 /** Ask the owning server to seat a bot as the second player. */
 export async function joinWithBot(roomId: string, botDeckId?: string): Promise<void> {
   if (useProductionRouter()) return getProductionRouter().joinWithBot(roomId, botDeckId);
+  const room = legacyRoomsById.get(roomId)?.deref();
+  if (!room) throw new Error("Bot join requires a connected room");
   const response = await fetch(`${legacyEndpoint().replace(/^ws/, "http")}/bot/join`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ roomId, botDeckId }),
+    body: JSON.stringify({ roomId, botDeckId, reconnectionToken: room.reconnectionToken }),
   });
   if (!response.ok) throw new Error(`Bot join failed (${response.status})`);
 }
@@ -446,7 +456,8 @@ async function withLegacyRoomTicket(options: AegisJoinOptions): Promise<AegisJoi
 const pendingIntents: { type: string; payload: Record<string, unknown> }[] = [];
 
 export function sendIntent(room: AegisRoom, intent: Intent): void {
-  const { type, ...payload } = intent;
+  const { type, ...fields } = intent;
+  const payload = { ...fields, rollbackRevision: room.state.rollbackRevision ?? 0 };
   if (room.connection?.isOpen) room.send(type, payload);
   else pendingIntents.push({ type, payload });
 }

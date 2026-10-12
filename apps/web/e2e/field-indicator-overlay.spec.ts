@@ -1,9 +1,19 @@
 import { openFixturePage } from "./scenario-page";
+import { startBrowserServer } from "./server";
 import fixtureBt13RoyalPurgeDelayRush from "../../api/src/engine/scenarios/bt13-royal-purge-delay-rush.fixture";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-// Run against the coordinator-owned live API/web pair; this file starts no server
-// and never fabricates decisions or replaces the production React/CSS.
+let server: Awaited<ReturnType<typeof startBrowserServer>>;
+
+test.beforeEach(async () => {
+  server = await startBrowserServer();
+});
+
+test.afterEach(async ({ page }) => {
+  await page.close();
+  await server.close();
+});
+
 function resolutionPlan(page: Page) {
   return page.locator('.decision-overlay--resolution-plan[role="dialog"]').filter({
     has: page.getByRole("heading", { name: "Order pending effects", exact: true, includeHidden: true }),

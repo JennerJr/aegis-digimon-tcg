@@ -1,4 +1,7 @@
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
+import { isBetaOnlyCard } from "@aegis/shared/cards/cardPool";
+import type { DeckFormat } from "@aegis/shared/deckFormat";
+import type { CommunityRandomResult } from "@aegis/shared/decks/CommunityRandomResult";
 import {
   CardColor,
   COMMUNITY_PAGE_SIZE,
@@ -238,6 +241,61 @@ export class CommunityDeckStore {
       mainDeckArts: row.main_deck_arts,
       eggDeckArts: row.egg_deck_arts,
     };
+  }
+
+  async randomDeck({
+    format,
+    betaAllowed,
+  }: {
+    format: DeckFormat;
+    betaAllowed: boolean;
+  }): Promise<CommunityRandomResult> {
+    return this.transaction(async (client) => {
+      await client.query("SET LOCAL transaction_isolation = 'repeatable read'");
+      await client.query("SET LOCAL statement_timeout = '5s'");
+      let cursor: string | null = null;
+      let selected: PublicDeckRow | undefined;
+      let eligibleCount = 0;
+      const deadline = performance.now() + 10_000;
+      for (;;) {
+        if (performance.now() > deadline) throw new Error("Community deck selection timed out");
+        const rows: PublicDeckRow[] = (
+          await client.query<PublicDeckRow>(
+            `SELECT ${PUBLIC_DECK_COLUMNS} FROM public_decks p JOIN accounts a ON a.id=p.account_id WHERE p.status='public' AND ($1::uuid IS NULL OR p.id > $1::uuid) ORDER BY p.id LIMIT 128`,
+            [cursor],
+          )
+        ).rows;
+        for (const row of rows) {
+          const deck = { mainDeck: row.main_deck, eggDeck: row.egg_deck };
+          if (!deckLegality(deck, { format }).legal) continue;
+          if (
+            !betaAllowed &&
+            [...deck.mainDeck, ...deck.eggDeck].some((id) => {
+              const card = getCardDefinition(id);
+              return card !== undefined && isBetaOnlyCard(card);
+            })
+          )
+            continue;
+          eligibleCount += 1;
+          if (randomInt(eligibleCount) === 0) selected = row;
+        }
+        if (rows.length < 128) break;
+        cursor = rows.at(-1)!.id;
+      }
+      return {
+        eligibleCount,
+        deck: selected
+          ? {
+              ...toSummary(selected, false),
+              status: selected.status,
+              mainDeck: selected.main_deck,
+              eggDeck: selected.egg_deck,
+              mainDeckArts: selected.main_deck_arts,
+              eggDeckArts: selected.egg_deck_arts,
+            }
+          : null,
+      };
+    });
   }
 
   async like(accountId: string, id: string): Promise<LikeResult> {

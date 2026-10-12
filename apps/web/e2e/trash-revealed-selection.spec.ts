@@ -8,7 +8,7 @@ import fixtureGiromonAssembly from "../../api/src/engine/scenarios/giromon-assem
 import type { ScenarioFixture } from "../../api/src/engine/scenario/types";
 import { openFixturePage } from "./scenario-page";
 
-import { fixtureVariant } from "../../api/src/engine/scenario/references";
+import { fixtureVariant, fixtureZoneId } from "../../api/src/engine/scenario/references";
 import fixtureSukamonBt11DeletionSearch from "../../api/src/engine/scenarios/sukamon-bt11-deletion-search.fixture";
 import fixtureSukamonBt3DeletionSearch from "../../api/src/engine/scenarios/sukamon-bt3-deletion-search.fixture";
 import fixtureSukamonEx13DeletionSearch from "../../api/src/engine/scenarios/sukamon-ex13-deletion-search.fixture";
@@ -39,24 +39,22 @@ for (const set of ["bt11", "bt3", "ex13"]) {
   test(`Sukamon ${set}: deletion opens revealed-card selection and confirms the chosen card`, async ({ page }) => {
     const server = await startBrowserServer();
     try {
-      await openScenario(
-        page,
-        fixtureVariant(
-          {
-            bt11: fixtureSukamonBt11DeletionSearch,
-            bt3: fixtureSukamonBt3DeletionSearch,
-            ex13: fixtureSukamonEx13DeletionSearch,
-          },
-          set,
-        ),
+      const fixture = fixtureVariant(
+        {
+          bt11: fixtureSukamonBt11DeletionSearch,
+          bt3: fixtureSukamonBt3DeletionSearch,
+          ex13: fixtureSukamonEx13DeletionSearch,
+        },
+        set,
       );
-      await page.locator('[data-drop="perm-you"][data-id="sukamon"]').click();
+      await openScenario(page, fixture);
+      await page.locator(`[data-drop="perm-you"][data-id="${fixtureZoneId(fixture, 0, "field", 0)}"]`).click();
       await page.getByRole("button", { name: "Attack", exact: true }).click();
-      await page.locator('[data-drop="perm-opp"][data-id="target"]').click();
+      await page.locator(`[data-drop="perm-opp"][data-id="${fixtureZoneId(fixture, 1, "field", 0)}"]`).click();
       const panel = page.getByRole("dialog");
-      const selected = panel.locator('[data-instance-id="sukamon-reveal-1"]');
+      const selected = panel.locator(`[data-instance-id="${fixtureZoneId(fixture, 0, "deck", 1)}"]`);
       await expect(selected).toBeVisible();
-      await expect(panel.locator('[data-instance-id="sukamon-reveal-3"]')).toBeDisabled();
+      await expect(panel.locator(`[data-instance-id="${fixtureZoneId(fixture, 0, "deck", 3)}"]`)).toBeDisabled();
       await selected.click();
       await expect(selected).toHaveAttribute("aria-pressed", "true");
       await panel.getByRole("button", { name: "Confirm targets", exact: true }).click();
@@ -67,7 +65,9 @@ for (const set of ["bt11", "bt3", "ex13"]) {
         await expect(
           page.locator('[data-drop="perm-you"]').getByRole("img", { name: "Chuumon", exact: true }),
         ).toBeVisible();
-      await expect(page.locator('[data-drop="perm-you"][data-id="sukamon"]')).toHaveCount(0);
+      await expect(
+        page.locator(`[data-drop="perm-you"][data-id="${fixtureZoneId(fixture, 0, "field", 0)}"]`),
+      ).toHaveCount(0);
       await expect(panel).not.toBeVisible();
       await expect(page.getByRole("button", { name: /^end turn$/i })).toBeEnabled();
     } finally {
@@ -88,7 +88,7 @@ for (const viewport of [
       await page.setViewportSize(viewport);
       await playCard(page, fixtureTrashRecovery, "Matt Ishida");
       const panel = page.getByRole("dialog");
-      const candidate = panel.locator('[data-instance-id="purple-option"]');
+      const candidate = panel.locator(`[data-instance-id="${fixtureZoneId(fixtureTrashRecovery, 0, "trash", 1)}"]`);
       await expect(candidate).toBeVisible();
       await candidate.click();
       await expect(candidate).toHaveAttribute("aria-pressed", "true");
@@ -111,9 +111,9 @@ for (const viewport of [
       await page.setViewportSize(viewport);
       await playCard(page, fixtureRevealedSearch, "Davis Motomiya");
       const panel = page.getByRole("dialog");
-      const blue = panel.locator('[data-instance-id="reveal-1"]');
-      const green = panel.locator('[data-instance-id="reveal-2"]');
-      const red = panel.locator('[data-instance-id="reveal-3"]');
+      const blue = panel.locator(`[data-instance-id="${fixtureZoneId(fixtureRevealedSearch, 0, "deck", 1)}"]`);
+      const green = panel.locator(`[data-instance-id="${fixtureZoneId(fixtureRevealedSearch, 0, "deck", 2)}"]`);
+      const red = panel.locator(`[data-instance-id="${fixtureZoneId(fixtureRevealedSearch, 0, "deck", 3)}"]`);
       await expect(blue).toBeEnabled();
       await expect(green).toBeDisabled();
       await expect(red).toBeDisabled();
@@ -233,12 +233,18 @@ for (const width of [1440, 390]) {
     try {
       await page.setViewportSize({ width, height: 1000 });
       await openScenario(page, fixtureChuumonTrashRevival);
-      await page.locator('[data-drop="perm-you"][data-id="revival-host"]').click();
+      await page
+        .locator(`[data-drop="perm-you"][data-id="${fixtureZoneId(fixtureChuumonTrashRevival, 0, "field", 0)}"]`)
+        .click();
       await page.getByRole("button", { name: "Attack", exact: true }).click();
-      await page.locator('[data-drop="perm-opp"][data-id="revival-enemy"]').click();
+      await page
+        .locator(`[data-drop="perm-opp"][data-id="${fixtureZoneId(fixtureChuumonTrashRevival, 1, "field", 0)}"]`)
+        .click();
       await page.getByRole("button", { name: "Yes, activate", exact: true }).click();
       const panel = page.getByRole("dialog");
-      const selected = panel.locator('[data-instance-id="revival-target"]');
+      const selected = panel.locator(
+        `[data-instance-id="${fixtureZoneId(fixtureChuumonTrashRevival, 0, "trash", 0)}"]`,
+      );
       await expect(selected).toBeVisible();
       await selected.click();
       await expect(selected).toHaveAttribute("aria-pressed", "true");
@@ -246,7 +252,9 @@ for (const width of [1440, 390]) {
       await expect(
         page.locator('[data-drop="perm-you"]').getByRole("img", { name: "Chuumon", exact: true }),
       ).toBeVisible();
-      await expect(page.locator('[data-drop="perm-you"][data-id="revival-host"]')).toHaveCount(0);
+      await expect(
+        page.locator(`[data-drop="perm-you"][data-id="${fixtureZoneId(fixtureChuumonTrashRevival, 0, "field", 0)}"]`),
+      ).toHaveCount(0);
       await expect(page.getByRole("button", { name: /^end turn$/i })).toBeEnabled();
     } finally {
       await page.close();
@@ -261,9 +269,13 @@ for (const width of [1440, 390]) {
       await playCard(page, fixtureSnowGoblimonReveal, "SnowGoblimon", "Play Digimon");
       const panel = page.getByRole("dialog");
       for (const index of [1, 2]) {
-        const selected = panel.locator(`[data-instance-id="oct06-latest-snow-reveal-${index}"]`);
+        const selected = panel.locator(
+          `[data-instance-id="${fixtureZoneId(fixtureSnowGoblimonReveal, 0, "deck", index)}"]`,
+        );
         await expect(selected).toBeEnabled();
-        await expect(panel.locator('[data-instance-id="snow-reveal-3"]')).toBeDisabled();
+        await expect(
+          panel.locator(`[data-instance-id="${fixtureZoneId(fixtureSnowGoblimonReveal, 0, "deck", 3)}"]`),
+        ).toBeDisabled();
         await selected.click();
         await expect(selected).toHaveAttribute("aria-pressed", "true");
         await panel.getByRole("button", { name: "Confirm targets", exact: true }).click();

@@ -5,13 +5,22 @@
     "moduleResolution": "NodeNext",
     "rootDir": "./src",
     "outDir": "./dist",
-    // Node 26 (see the root `engines` field) ships the ES2023 array methods this code uses.
     "lib": ["ES2023"],
     "types": ["node"],
     "experimentalDecorators": true,
     "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
-  "references": [{ "path": "../../packages/shared" }],
+  "references": [
+    {
+      "path": "../../packages/shared"
+    }
+  ],
   "include": ["src/**/*.ts"],
-  "exclude": ["src/engine/fuzzer.test.ts"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.fixture.ts",
+    "src/engine/testkit/**",
+    "src/engine/conformance/**"
+  ]
 }

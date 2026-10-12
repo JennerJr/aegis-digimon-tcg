@@ -48,9 +48,36 @@ This uses the normal Vite configuration, including Lightning CSS and its browser
 targets, and serves only compiled assets from `/tmp/aegis-browser-production-4175`.
 No development stylesheet tags remain to mask declarations dropped by the build.
 
-One worker uses loopback ports 4175 (Vite), 2569 (a TCP edge that stands in for the production proxy) and 2570 (Colyseus). Do not run two copies
-at once. Each test starts a new server/room and browser context. The Node heap is
+One worker uses loopback ports 4175 (Vite), 2569 (a TCP edge that stands in for the production proxy) and 2570 (Colyseus). Run one process by default; requested
+parallel execution requires separate port triples. Each test starts a new server/room and browser context. The Node heap is
 limited to 2048 MB; Chromium consumes additional memory. No CI is configured.
+
+## Sequence timing and isolated runs
+
+Scenario drivers provide a deterministic BT1 red deck for the bot. Otherwise a
+random catalog deck can replace `fromDeck` fixture entries with a breeding effect
+that deletes the scripted attacker before the tested window. The full-board
+presentation driver keeps its catalog deck for the human player.
+
+Decision budgets follow the actual presentation sequence. The EX13-021/EX13-045
+DNA chain allows 10 seconds per pending decision; the BT26-016 optional decision
+allows 8 seconds after its preceding clause, including Chronomon's prevention
+after the security and Gaia Force announcements. Other decisions keep their normal
+budgets. Partition waits for the opponent's complete turn-start sequence before
+its own decision becomes visible.
+
+The `battle-entry-effects-before-end-of-attack` sequence allows 12 seconds for Grademon's End of Attack decision after Minervamon's deletion and Lunamon's source play, three-card reveal, search, hand arrivals, and return of the remaining card. The allowance belongs only to that decision; the sequence still requires the presentation queue to drain without failed steps or expired gates.
+
+When parallel execution is requested, use separate Playwright processes with
+unique `AEGIS_E2E_WEB_PORT`, `AEGIS_E2E_EDGE_PORT`, and `AEGIS_E2E_SERVER_PORT`
+values, each with one worker. Build shared contracts and the API once before
+starting those processes. Keep source frozen while they run: Vite hot reload can
+interrupt a live match. Run native frame measurements separately so competing
+browser processes do not invalidate sampling quality.
+
+Touch selection uses an exposed point near the artwork's upper corner. Chromium
+can adjust a central touch toward a nearby inspection button on compact cards;
+the gesture must reach the artwork when testing selection or a long press.
 
 ## Coverage and boundaries
 

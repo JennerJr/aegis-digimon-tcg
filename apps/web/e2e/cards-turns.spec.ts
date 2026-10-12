@@ -61,7 +61,16 @@ for (const cardId of ["BT23-027", "BT25-034"]) {
     const state = await scenario.snapshot();
     expect(state.players[0]!.battleArea[0]!.stack.some((c) => c.cardId === "BT14-033")).toBe(true);
     expect(state.players[0]!.securityCount).toBe(3);
-    expect(state.players[0]!.security.at(-1)?.cardId).toBe("BT14-035");
+    expect((await scenario.presentation()).events).toContainEqual(
+      expect.objectContaining({
+        kind: "cardsMoved",
+        to: "security",
+        instanceIds: [fixtureZoneId(fixturePatamonAngemon, 0, "hand", 0)],
+      }),
+    );
+    expect(
+      state.players[0]!.hand.some((card) => card.instanceId === fixtureZoneId(fixturePatamonAngemon, 0, "hand", 0)),
+    ).toBe(false);
     await scenario.healthy();
   });
 }

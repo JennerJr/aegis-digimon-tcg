@@ -28,7 +28,7 @@ export function defineAegisRooms(gameServer: Pick<Server, "define">): void {
   // into bot mode by sending `{ botRoom: true }` themselves.
   gameServer
     .define(ROOM_TYPE, AegisRoom, { ...publicMode, allowFormatSelection: true, betaBattleRoom: false })
-    .filterBy(["matchTimer", "bestOf", "format"]);
+    .filterBy(["matchTimer", "bestOf", "format", "allowRollback"]);
   gameServer
     .define(ROOM_TYPE_UNLIMITED, AegisRoom, {
       ...publicMode,
@@ -36,7 +36,7 @@ export function defineAegisRooms(gameServer: Pick<Server, "define">): void {
       unlimitedRoom: true,
       betaBattleRoom: false,
     })
-    .filterBy(["matchTimer", "bestOf", "format"]);
+    .filterBy(["matchTimer", "bestOf", "format", "allowRollback"]);
   gameServer.define(ROOM_TYPE_BOT, AegisRoom, {
     ...publicMode,
     botRoom: true,
@@ -57,7 +57,7 @@ export function defineAegisRooms(gameServer: Pick<Server, "define">): void {
       ...publicMode,
       betaBattleRoom: true,
     })
-    .filterBy(["matchTimer", "bestOf"]);
+    .filterBy(["matchTimer", "bestOf", "allowRollback"]);
   // Filtered by BOTH tournament join keys: the legacy flow matches a room per bracket match, the
   // program flow one per Tournament Game, and neither may ever land in the other's room.
   gameServer

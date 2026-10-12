@@ -19,12 +19,14 @@ import { waitForAttackArrowClock } from "../../attackArrowClock";
 export function enqueueCombatImpact({
   clashScenes,
   beaten,
+  after,
   setFieldClash,
   setCombatImpactIds,
   enqueue,
 }: {
   clashScenes: readonly FieldClashScene[];
   beaten: ReadonlySet<string>;
+  after?: PresentationGate;
   setFieldClash: Dispatch<SetStateAction<FieldClashScene | null>>;
   setCombatImpactIds: Dispatch<SetStateAction<ReadonlySet<string>>>;
   enqueue: (step: AnimationStep) => void;
@@ -33,6 +35,7 @@ export function enqueueCombatImpact({
   const landedByPermanent = new Map<string, PresentationGate>();
   for (const scene of clashScenes) {
     const landed = createPresentationGate();
+    landed.after = after;
     completion = landed;
     const impacted: ReadonlySet<string> = new Set(scene.loserPermanentIds);
     for (const permanentId of impacted) landedByPermanent.set(permanentId, landed);
@@ -60,6 +63,7 @@ export function enqueueCombatImpact({
   }
   if (beaten.size === 0) return { completion, landedByPermanent };
   const landed = createPresentationGate();
+  landed.after = after;
   const impacted: ReadonlySet<string> = new Set(beaten);
   for (const permanentId of impacted) landedByPermanent.set(permanentId, landed);
   enqueue({

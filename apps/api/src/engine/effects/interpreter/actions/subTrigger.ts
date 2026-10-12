@@ -1179,14 +1179,17 @@ export async function runSubTrigger(
       ? [(subCtx: EffectContext) => !onlyInfeasibleDetachTop(subCtx, action.actions)]
       : []),
   ];
+  const bindsPrintedSource =
+    action.on === undefined ||
+    (ctx.continuousPass === true && (action.on.isSelf === true || action.on.filter?.isSelfRef === true));
   ctx.fx.subscribeSubTrigger({
     event,
     activationDeferred: true,
     ...(ctx.activeEffectKey !== undefined || ctx.activeActionPath !== undefined
       ? { dedupeKey: `${ctx.source.instanceId}/${ctx.activeEffectKey ?? "effect"}/${ctx.activeActionPath ?? "0"}` }
       : {}),
-    ...(isInheritedSource ? { isInheritedSource: true } : {}),
-    ...(isLinkedSource ? { isLinkedSource: true } : {}),
+    ...(bindsPrintedSource && isInheritedSource ? { isInheritedSource: true } : {}),
+    ...(bindsPrintedSource && isLinkedSource ? { isLinkedSource: true } : {}),
     ...(sourceFilter?.isSelfRef === true ? { watchesSelf: true } : {}),
     ...(fireGates.length === 0 ? {} : { canFire: (subCtx) => fireGates.every((gate) => gate(subCtx)) }),
     ...(costFreeOptionalBody || requiresSelfSuspend || activationCondition !== undefined
@@ -1203,9 +1206,9 @@ export async function runSubTrigger(
     ...(discardedSelfSource ? {} : anchorPermanentId !== undefined ? { sourcePermanentId: anchorPermanentId } : {}),
     ...(playerScoped
       ? { activationContext: ctx }
-      : action.on !== undefined
-        ? {}
-        : { sourceInstanceId: ctx.source.instanceId }),
+      : bindsPrintedSource
+        ? { sourceInstanceId: ctx.source.instanceId }
+        : {}),
     // Anchor-less fallback (the eighth engine gap): when there is no on-field permanent to
     // anchor to AND the clause was not granted to another permanent (both cases already set
     // anchorPermanentId), the watcher's source is a loose hand/trash-resident CardInstance —
@@ -1253,7 +1256,7 @@ export async function runSubTrigger(
       // continuous effect that installed it (BT11-112 prints three clauses in one box).
       subCtx.activeEffectText = printedWatcherClause ?? subCtx.activeEffectText ?? ctx.activeEffectText;
       subCtx.activeEffectTextPart = action.effectTextPart;
-      subCtx.activeEffectIsInherited = isInheritedSource;
+      subCtx.activeEffectIsInherited = bindsPrintedSource && isInheritedSource;
       // The body is resolving a triggered event even when its watcher was installed by a
       // continuous effect. Any duration-scoped effects it creates must survive the trailing
       // continuous recompute instead of being mistaken for static contributions.
@@ -1366,15 +1369,7 @@ export async function runSubTrigger(
           if (gate === undefined || evaluateCondition(subCtx, gate)) anyActionGateMatched = true;
           const outerContinuation = subCtx.continueEffectAfterAttackDeclaration;
           const outerOptionalAnswer = subCtx.presetOptionalAnswer;
-          // Plesiomon's optional attack on the DNA result is a separate decision
-          // from accepting the watcher's DNA activation in the resolution plan.
-          if (
-            index > 0 &&
-            current.kind === "Attack" &&
-            current.optional === true &&
-            current.target.filter.boundRef !== undefined &&
-            outerOptionalAnswer === true
-          )
+          if (index > 0 && current.kind === "Attack" && current.optional === true && outerOptionalAnswer === true)
             subCtx.presetOptionalAnswer = undefined;
           let continuationRan = false;
           if (mayDeclareAttack(current) && index + 1 < action.actions.length) {

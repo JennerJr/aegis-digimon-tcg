@@ -76,7 +76,7 @@ for (const target of ["low", "high"] as const) {
         await expect(page.locator("[data-prompt-surface]")).toContainText("for each card in your security stack");
         await expect(page.getByRole("button", { name: /^(Confirm targets|Confirm)$/i })).toBeDisabled();
         choices++;
-        return { instanceId: `dev-perm-1-feedback73-${target}` };
+        return { instanceId: fixturePermanentId(`dev-perm-1-feedback73-${target}`) };
       },
     );
     const after = await scenario.snapshot();

@@ -155,7 +155,7 @@ export function resolutionDeps(
     turnSeat: engine.state.turnSeat,
     listCandidateInstances: listCandidate,
     ruleProcess: async () => {
-      if (engine.optionResolutionDepth > 0 || engine.effectResolutionDepth > 0) return;
+      if (engine.optionMainDepth > 0 || engine.effectResolutionDepth > 0) return;
       derivedPending.push(...(await collectRuleProcessPending(engine)));
     },
     isGameOver: () => engine.state.gameOver,
@@ -1079,6 +1079,7 @@ export function dnaDigivolveDeps(engine: GameEngine): DnaDigivolveDeps {
  */
 export function buildTurnFlowHooks(engine: GameEngine): TurnFlowHooks {
   return {
+    beforeTurn: (turn) => engine.hooks.beforeTurn?.(turn),
     fireTiming: async (timing) => engine.fireTiming(timing),
     draw: async (seat, count) => (await drawCards(engine, seat, count)).length,
     deckCount: (seat) => engine.state.players[seat]?.deck.length ?? 0,

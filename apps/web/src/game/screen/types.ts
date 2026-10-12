@@ -19,6 +19,7 @@ export interface TrackingArrowGeometry {
   from: { x: number; y: number };
   to: { x: number; y: number }[];
   sourcePermanentId?: string;
+  targetKeys?: readonly string[];
   clock?: AttackArrowClock;
 }
 

@@ -37,6 +37,7 @@ function ChatUnreadBadge({ count }: { count: number }) {
 }
 
 export function OpponentBar({
+  rollbackControls,
   spectating = false,
   spectatorCode,
   timer,
@@ -66,6 +67,7 @@ export function OpponentBar({
   onSkipPresentation,
   onResetScenario,
 }: {
+  rollbackControls?: ReactNode;
   spectating?: boolean;
   spectatorCode?: string;
   timer?: ReactNode;
@@ -216,6 +218,7 @@ export function OpponentBar({
             <ChatUnreadBadge count={chatUnread} />
           </summary>
           <div className="game-mobile-menu__actions">
+            {rollbackControls}
             {spectatorCode ? <SpectatorInvite code={spectatorCode} variant="menu" /> : null}
             {onResetScenario ? (
               <button type="button" onClick={onResetScenario}>
@@ -248,6 +251,7 @@ export function OpponentBar({
         </details>
       ) : narrowGameLayout ? (
         <>
+          {rollbackControls}
           {spectatorCode ? <SpectatorInvite code={spectatorCode} variant="mobile" /> : null}
           <button
             type="button"
@@ -291,6 +295,7 @@ export function OpponentBar({
         </>
       ) : (
         <div className="game-topbar-actions">
+          {rollbackControls}
           {spectatorCode ? <SpectatorInvite code={spectatorCode} /> : null}
           {onResetScenario ? (
             <button

@@ -848,6 +848,34 @@ function sourceOnBoard(seat: Seat, instanceId: string, board: () => FakePermanen
 }
 
 describe("resolveTiming: a pending effect whose source card changes permanent identity (§15-4-4-3)", () => {
+  it("keeps an already-activated consequence pending after its installer becomes a stack card", async () => {
+    const permanent = makePermanent("recipient", "installer");
+    const board = [permanent];
+    const resolvedKeys: string[] = [];
+    const source = sourceOnBoard(0, "installer", () => board);
+    const digivolve = fakeEffect("digivolve", {
+      onResolve: () => {
+        resolvedKeys.push("digivolve");
+        permanent.stack.push({ instanceId: "installer" });
+        permanent.topCard = { instanceId: "evolved" };
+      },
+    });
+    const consequence = {
+      ...fakeEffect("consequence", { onResolve: () => resolvedKeys.push("consequence") }),
+      isActivatedConsequence: true,
+    };
+    const printed = fakeEffect("printed", { onResolve: () => resolvedKeys.push("printed") });
+    const collectable: CollectedEffect[] = [
+      { source, effect: digivolve },
+      { source, effect: consequence },
+      { source, effect: printed },
+    ];
+    const { env } = envOver([], { collect: () => collectable });
+    await resolveTiming(EffectTiming.OnDestroyedAnyone, env);
+    expect(resolvedKeys).toEqual(["digivolve", "consequence"]);
+    expect(permanent.stack.map((card) => card.instanceId)).toEqual(["installer"]);
+  });
+
   it("Q2738/Q2769: digivolving on top of the source kills its other pending [When Attacking]", async () => {
     // BT17-023 shape: one card, two [When Attacking] effects triggered together. Resolving the
     // digivolve one makes the attacker's top card a digivolution card. Q2769: "if you activate

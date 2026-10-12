@@ -144,10 +144,8 @@ it.each([false, true])(
       const player = s.state.players[0]!;
       expect(s.state.memory).toBe(5);
       expect(player.battleArea.map((p) => p.topCard.instanceId)).toEqual(holyProtection ? [destroy] : []);
-      expect(player.security).toHaveLength(2);
-      expect(player.trash.map((c) => c.instanceId)).toEqual(
-        holyProtection ? [] : [...sourceIds, giant, destroy, securityTop],
-      );
+      expect(player.security).toHaveLength(holyProtection ? 2 : 3);
+      expect(player.trash.map((c) => c.instanceId)).toEqual(holyProtection ? [] : [...sourceIds, giant, destroy]);
       expect(player.deck.map((c) => c.instanceId)).toEqual([
         ...deck.slice(2),
         s.inst("cherub").instanceId,
@@ -171,14 +169,16 @@ it.each([false, true])(
           ({ req }) => req.sourceCardId === "BT26-016" && req.promptText === "Prevent leaving the battle area?",
         ),
       ).toHaveLength(1);
-      expect(s.events.filter((e) => lifecycle(e, "effectTriggered", "AD1-025", "whenLeavesPlay"))).toHaveLength(
-        holyProtection ? 0 : 1,
-      );
+      expect(s.events.filter((e) => lifecycle(e, "effectTriggered", "AD1-025", "whenLeavesPlay"))).toHaveLength(0);
+      expect(s.state.players[1]!.battleArea.some((permanent) => permanent.topCard.cardId === "AD1-025")).toBe(false);
       const battlePrevention = s.events.findIndex((e) => lifecycle(e, "effectResolved", "BT26-085", "AllTurns"));
       const execute = s.events.findIndex((e) => lifecycle(e, "effectTriggered", "BT26-060", "OnEndAttack"));
       const holy = s.events.findIndex((e) => lifecycle(e, "effectResolved", "BT26-016", "AllTurns"));
       const ended = s.events.findIndex((e) => e.kind === "attackEnded");
       for (const index of [battlePrevention, execute, holy, ended]) expect(index).toBeGreaterThanOrEqual(0);
+      const evolutionEffect = s.events.findIndex((e) => lifecycle(e, "effectResolved", "BT26-060", "WhenDigivolving"));
+      expect(evolutionEffect).toBeGreaterThan(battlePrevention);
+      expect(evolutionEffect).toBeLessThan(execute);
       expect(battlePrevention).toBeLessThan(execute);
       expect(execute).toBeLessThan(holy);
       expect(holy).toBeLessThan(ended);
@@ -344,7 +344,6 @@ it.each([false, true])("Feedback #79 playable Execute arena: exact Holy payment 
             ...MATERIALS.map((_, i) => fixtureInstanceId(`feedback79-material-${i}`)),
             fixtureInstanceId("feedback79-giant"),
             fixtureInstanceId("feedback79-destroy"),
-            fixtureInstanceId("feedback79-security-0-0"),
           ],
     );
     expect(player.deck.slice(holyProtection ? -2 : -1).map((c) => c.instanceId)).toEqual(

@@ -18,6 +18,7 @@ export function TurnControl({
   covered?: boolean;
 }) {
   const { t } = useTranslation();
+  const label = t(turnControlLabelKey(state));
   const waiting = state === "waiting" || state === "resolving";
   const covered = coveredOverride ?? false;
   return (
@@ -37,7 +38,7 @@ export function TurnControl({
       {/* The ring the reference client turns around the control for as long as it
           is the thing the player is meant to press. */}
       {!waiting ? <span className="game-end-turn-orb__ring" aria-hidden="true" /> : null}
-      {t(turnControlLabelKey(state))}
+      <span key={label}>{label}</span>
     </button>
   );
 }

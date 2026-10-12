@@ -36,8 +36,8 @@ class SakuyamonScenario {
   }
 
   async idle(timeout = 8_000) {
-    await expect.poll(() => this.page.evaluate(() => window.browserTestPresentation().idle), { timeout }).toBe(true);
     await expect(this.page.getByRole("button", { name: /^end turn$/i })).toBeEnabled();
+    await expect.poll(() => this.page.evaluate(() => window.browserTestPresentation().idle), { timeout }).toBe(true);
   }
 
   async activate(card: string) {

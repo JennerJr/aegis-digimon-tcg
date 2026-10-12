@@ -181,3 +181,32 @@ it.each([false, true])(
     expect(screen.container.querySelector("svg")!.innerHTML).toBe(geometry);
   },
 );
+
+it("redirects the painted arrow before the next animation frame", () => {
+  let frame: FrameRequestCallback | undefined;
+  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+    frame = callback;
+    return 1;
+  });
+  vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+    const left = this.previousElementSibling ? 300 : 0;
+    return { x: left, y: 0, left, top: 0, right: left + 100, bottom: 100, width: 100, height: 100, toJSON() {} };
+  });
+  const view = render(<Harness sceneVisible={false} closed={false} />);
+  act(() => frame?.(1000));
+  const arrow = () => view.container.querySelector("[data-attack-targets]");
+  expect(arrow()?.getAttribute("data-attack-targets")).toBe('["security-opp"]');
+  view.rerender(
+    <Harness
+      sceneVisible={false}
+      closed={false}
+      attack={{
+        ...declaration,
+        redirected: true,
+        target: { kind: "permanent", permanentId: "defender" },
+      }}
+    />,
+  );
+  expect(arrow()?.getAttribute("data-attack-targets")).toBe('["defender"]');
+});

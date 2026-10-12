@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { Client, type Room } from "@colyseus/sdk";
 import { DECISION_CHANNEL, type DecisionRequest, type SequencedServerEvent, type GameState } from "@aegis/shared";
 import { GameScreen } from "../src/game/GameScreen";
+import { installAudioLifecycle } from "@/design/sound";
 import { applyDarkMode } from "../src/design/darkMode";
 import { SEQUENTIAL_PACING_ENABLED } from "../src/features";
 import { I18nProvider } from "../src/i18n";
@@ -42,6 +43,8 @@ declare global {
 
 // Match App bootstrap so actual saved theme preferences reach production CSS.
 applyDarkMode();
+const disposeAudioLifecycle = installAudioLifecycle();
+window.addEventListener("pagehide", disposeAudioLifecycle, { once: true });
 
 // The local CLI serves options beside this entry. Automated tests supply them before navigation.
 if (!window.browserTestOptions) {

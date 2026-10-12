@@ -1,6 +1,6 @@
 {
   "name": "aegis",
-  "version": "1.24.0-beta",
+  "version": "1.25.0-beta",
   "private": true,
   "description": "Aegis - a server-authoritative Digimon-style trading card game (React + PixiJS client, Colyseus API).",
   "license": "MIT",
@@ -52,8 +52,8 @@
     "verify:simulator:deep": "pnpm verify:simulator && pnpm verify:rules-source && pnpm test:tools && pnpm --filter @aegis/api test:conformance && pnpm --filter @aegis/api test && FUZZ_CASES=1000 FUZZ_STEPS=16 pnpm --filter @aegis/api exec vitest run src/engine/fuzzer.test.ts && pnpm --filter @aegis/api build && node apps/api/dist/bot/battleFuzzerCli.js --newest --deck-limit 2 --matchups 4 --seeds 2 --turn-limit 60",
     "verify:rules-source": "node tools/kb/check-rules-freshness.mjs",
     "dev": "concurrently -n shared,api,web -c blue,green,magenta \"pnpm --filter @aegis/shared dev\" \"pnpm --filter @aegis/api dev\" \"pnpm --filter @aegis/web dev\"",
-    "build": "pnpm --filter @aegis/shared build && concurrently -n api,web -c green,magenta \"pnpm --filter @aegis/api build\" \"pnpm --filter @aegis/web build\"",
-    "typecheck": "pnpm --filter @aegis/shared build && pnpm -r typecheck",
+    "build": "pnpm --filter @aegis/shared build && pnpm --filter @aegis/api build && pnpm --filter @aegis/web build",
+    "typecheck": "pnpm --filter @aegis/shared build && pnpm -r --workspace-concurrency=1 typecheck",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "test:tools": "node --test tools/*.test.mjs tools/kb/*.test.mjs",
     "effects:sync:set": "node tools/sync-effects-from-card-modules.mjs",
@@ -78,7 +78,8 @@
     "release:set": "node tools/release/version.mjs set",
     "release:current": "node tools/release/version.mjs current",
     "release:notes": "node tools/release/render-notes.mjs",
-    "release:publish": "node tools/release/publish.mjs"
+    "release:publish": "node tools/release/publish.mjs",
+    "typecheck:tests": "pnpm --filter @aegis/shared build && pnpm --filter @aegis/api typecheck:tests"
   },
   "devDependencies": {
     "concurrently": "^10.0.0",

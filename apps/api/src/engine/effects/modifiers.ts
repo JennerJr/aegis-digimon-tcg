@@ -359,10 +359,15 @@ export class ModifierLedger {
   private evoCostSeq = 0;
   private playCostSeq = 0;
   private continuous?: import("./continuous.js").ContinuousEffectLedger;
+  private currentAttackerId?: () => string | undefined;
 
   /** Wire the continuous ledger for cost-reduction prohibition checks. */
-  bindContinuous(ledger: import("./continuous.js").ContinuousEffectLedger): void {
+  bindContinuous(
+    ledger: import("./continuous.js").ContinuousEffectLedger,
+    currentAttackerId?: () => string | undefined,
+  ): void {
     this.continuous = ledger;
+    this.currentAttackerId = currentAttackerId;
   }
 
   /**
@@ -485,6 +490,10 @@ export class ModifierLedger {
     for (const permanentId of reduced) this.recomputeDP(state, permanentId);
   }
 
+  private progressSuppresses(permanentId: string): boolean {
+    return this.currentAttackerId?.() === permanentId && this.continuous?.hasKeyword(permanentId, "Progress") === true;
+  }
+
   private dpModifierIsSuppressed(state: GameState, modifier: DpModifier): boolean {
     if (
       modifier.delta < 0 &&
@@ -498,6 +507,7 @@ export class ModifierLedger {
     }
     const permanent = findPermanentInState(state, modifier.permanentId);
     if (permanent === undefined || permanent.controllerSeat === modifier.sourceSeat) return false;
+    if (this.progressSuppresses(permanent.permanentId)) return true;
     const sourceKinds = modifier.sourceKinds.length > 0 ? modifier.sourceKinds : [undefined];
     return sourceKinds.some((kind) =>
       this.continuous!.hasRestriction(permanent.permanentId, "beAffected", kind, { byOpponentEffect: true }),
@@ -569,6 +579,7 @@ export class ModifierLedger {
       return false;
     }
     if (permanent.controllerSeat === modifier.sourceSeat) return false;
+    if (this.progressSuppresses(permanent.permanentId)) return true;
     const sourceKinds = modifier.sourceKinds.length > 0 ? modifier.sourceKinds : [undefined];
     return sourceKinds.some((kind) =>
       this.continuous!.hasRestriction(permanent.permanentId, "beAffected", kind, { byOpponentEffect: true }),
@@ -663,6 +674,7 @@ export class ModifierLedger {
   private baseDpOverrideIsSuppressed(permanent: Permanent, override: BaseDpOverride): boolean {
     if (override.sourceSeat === undefined || this.continuous === undefined) return false;
     if (permanent.controllerSeat === override.sourceSeat) return false;
+    if (this.progressSuppresses(permanent.permanentId)) return true;
     const sourceKinds = override.sourceKinds ?? [];
     if (sourceKinds.length === 0) {
       return this.continuous.hasRestriction(permanent.permanentId, "beAffected", undefined, {

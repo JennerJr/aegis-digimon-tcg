@@ -57,7 +57,9 @@ for (const viewport of [PHONE, DESKTOP]) {
         await peek.click();
       }
       await expect(accepted).toBeVisible();
-      expect(await hitsItself(accepted.first()), "the opened notice must be readable and tappable").toBe(true);
+      await expect
+        .poll(() => hitsItself(accepted.first()), { message: "the opened notice must be readable and tappable" })
+        .toBe(true);
 
       // On phones the board under the prompt's backdrop still takes no input.
       const endTurn = page.getByRole("button", { name: /^End turn$/i });
@@ -93,6 +95,7 @@ for (const viewport of [PHONE, { width: 360, height: 780 }, DESKTOP]) {
       });
       await openFixturePage(page, fixtureP240ArcturusmonOrderedPlacement);
       await page.getByRole("button", { name: /^end breeding$/i }).click();
+      await expect(page.getByRole("button", { name: /^end turn$/i })).toBeEnabled();
       const card = page.getByTestId("hand").getByRole("button", { name: "Select Arcturusmon", exact: true });
       await card.focus();
       await card.press("Enter");

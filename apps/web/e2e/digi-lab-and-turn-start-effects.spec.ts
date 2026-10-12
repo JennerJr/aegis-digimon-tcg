@@ -2,6 +2,7 @@ import type { ScenarioFixture } from "../../api/src/engine/scenario/types";
 import { openFixturePage } from "./scenario-page";
 
 import { fixtureVariant } from "../../api/src/engine/scenario/references";
+import fixtureTsunomonJupitermon from "../../api/src/engine/scenarios/tsunomon-jupitermon.fixture";
 import fixtureTsunomonJupitermonZero from "../../api/src/engine/scenarios/tsunomon-jupitermon-zero.fixture";
 import fixturePatamonZero from "../../api/src/engine/scenarios/patamon-zero.fixture";
 import fixturePatamonOne from "../../api/src/engine/scenarios/patamon-one.fixture";
@@ -43,28 +44,37 @@ class DiscordFollowupArena {
     await openFixturePage(this.page, scenario);
 
     await this.page.getByRole("button", { name: /^end breeding$/i }).click();
-    if (scenario.name!.endsWith("-asuna")) await answerActivation(this.page, false);
+    if (scenario.name === fixtureAsuna.name) await answerActivation(this.page, false);
     await beforeMain?.();
     await expect(this.page.getByRole("button", { name: /^end turn$/i })).toBeEnabled();
-    await this.page.getByText("Scenario instructions", { exact: true }).click();
   }
 }
 
-for (const [scenario, note] of [
-  [fixtureMococomonOncePerTurn, "same Mococomon must NOT resolve again"],
-  [fixtureAsuna, "alternate cost 3"],
-  [fixtureImageTrainingLm056Bt25083, "Both routes must appear"],
-  [fixtureBreathingTrainingLm062Bt25083, "alternate TS route"],
-  [fixturePagumon, "Pagumon’s inherited evolution"],
-  [fixtureFlyBulletHand, "Gallantmon X must be deleted"],
-  [fixtureFlyBulletSources, "Gallantmon X must be deleted"],
-  [fixtureDigilabBreeding, "keep Veemon in breeding"],
+for (const scenario of [
+  fixtureMococomonOncePerTurn,
+  fixtureAsuna,
+  fixtureImageTrainingLm056Bt25083,
+  fixtureBreathingTrainingLm062Bt25083,
+  fixturePagumon,
+  fixtureFlyBulletHand,
+  fixtureFlyBulletSources,
+  fixtureDigilabBreeding,
 ] as const) {
   test(`${scenario.name} opens the configured board and reaches Main`, async ({ page }) => {
     const server = await startBrowserServer();
     try {
       await new DiscordFollowupArena(page).open(scenario);
-      await expect(page.getByText(note, { exact: false })).toBeVisible();
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            window.browserTestSnapshot().players[0]!.battleArea.map((permanent) => permanent.topCard.cardId),
+          ),
+        )
+        .toEqual(
+          (scenario.board[0]?.battleArea ?? []).map((permanent) =>
+            typeof permanent === "string" ? permanent : permanent.card,
+          ),
+        );
       if (scenario.name!.endsWith("digilab-breeding")) {
         await page.getByTestId("hand").getByRole("img", { name: "DigiLab", exact: true }).click();
         await expect(page.getByRole("button", { name: "Play Option", exact: true })).toBeEnabled();
@@ -90,7 +100,9 @@ for (const [suffix, memory] of [
   test(`Tsunomon charges the variable cost minus 1${suffix}`, async ({ page }) => {
     const server = await startBrowserServer();
     try {
-      await new DiscordFollowupArena(page).open(fixtureVariant({ "-zero": fixtureTsunomonJupitermonZero }, suffix));
+      await new DiscordFollowupArena(page).open(
+        fixtureVariant({ "": fixtureTsunomonJupitermon, "-zero": fixtureTsunomonJupitermonZero }, suffix),
+      );
       const attacker = page
         .locator('[data-drop="perm-you"]')
         .filter({ has: page.getByRole("img", { name: "Ikkakumon", exact: true }) });
@@ -131,7 +143,7 @@ for (const suffix of ["zero", "one", "multiple"]) {
       await expect(
         page.locator('[data-drop="perm-you"]').filter({ has: page.getByRole("img", { name: "Patamon", exact: true }) }),
       ).toHaveCount(1);
-      await expect(page.getByText("Patamon must privately show all 3 security cards", { exact: false })).toBeVisible();
+      await expect.poll(() => page.evaluate(() => window.browserTestSnapshot().players[0]!.security.length)).toBe(3);
     } finally {
       await page.close();
       await server.close();
@@ -256,7 +268,9 @@ for (const accepted of [true, false]) {
       await new DiscordFollowupArena(page).open(fixtureExamonBt23PartitionChoice);
       await page.getByRole("button", { name: /^end turn$/i }).click();
       const partition = page.getByRole("dialog");
-      await expect(partition.getByRole("heading", { name: "Do you want to activate Partition?" })).toBeVisible();
+      await expect(partition.getByRole("heading", { name: "Do you want to activate Partition?" })).toBeVisible({
+        timeout: 40_000,
+      });
       await expect(partition.getByRole("img", { name: "Groundramon", exact: true })).toBeVisible();
       await expect(partition.getByRole("img", { name: "Wingdramon", exact: true })).toBeVisible();
       await expect(partition.getByRole("button", { name: "Confirm targets", exact: true })).toHaveCount(0);

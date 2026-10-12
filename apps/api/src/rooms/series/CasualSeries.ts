@@ -34,6 +34,7 @@ export interface SeriesRoomPort {
 
 export interface SeriesSettings {
   bestOf: MatchBestOf;
+  allowRollback?: boolean;
   matchTimer: boolean;
   timerStartSeconds: number;
   unlimited?: boolean;
@@ -257,6 +258,7 @@ export class CasualSeries {
       nonce: "",
       roomName: this.port.roomName,
       bestOf: this.settings.bestOf,
+      allowRollback: this.settings.allowRollback === true,
       matchTimer: this.settings.matchTimer,
       timerStartSeconds: this.settings.timerStartSeconds,
       unlimited: this.settings.unlimited === true,

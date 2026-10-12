@@ -26,6 +26,66 @@ all deckable catalog entries remain visible, including preview cards. A deck
 containing beta-only cards needs the checkbox in Quick Match or Practice vs AI
 before launch.
 
+## Optional rollback
+
+`allowRollback` defaults to `false`. Casual random queues, including Beta and
+Unlimited, filter on the explicit boolean so both players choose the same rule.
+Private hosts and bot-room creators choose it for their room; casual series keep
+it for subsequent games. Ranked and tournament handlers refuse rollback even
+when a client forges the option or request.
+
+On the `rollback` channel, a seated client sends `{ type: "request", kind:
+"action" | "turn", revision }`. A human opponent must answer `{ type:
+"respond", requestId, accept, revision }`; the requester may send `cancel` with
+the request ID and revision. Bots accept immediately. Normal play is blocked
+while consent or reconstruction is pending. Disconnects and room-issued engine
+inputs invalidate pending consent. Finished games are final before result
+persistence; they cannot be reopened and rewards cannot be granted twice.
+
+Action rollback restores the point before the last accepted gameplay intent,
+including effect and combat answers. Turn rollback restores the current turn
+before start effects, unsuspending, and drawing; if no gameplay action has been
+accepted since that start, it restores the previous turn start. The API rebuilds
+a fresh engine from its seed, decks, fixture when applicable, and exact input
+prefix. Replay divergence or a mismatch against the captured private-state
+fingerprint refuses the restoration. This rebuild recreates private zones, RNG
+streams, effect continuations, decisions, modifiers, and turn/use bookkeeping.
+Real elapsed match-clock time is not refunded.
+
+Successful restoration increments `rollbackRevision`. Gameplay intents and
+presentation reports carry that revision, so obsolete work is rejected. The API
+retires the previous engine and bot jobs, recreates visibility views, and sends
+`rollbackReset` before a full state snapshot. The client resets its schema
+decoder, queued intents, decisions, snapshots, and animation session. Recorded
+input replays retain the valid active prefix and normalize subsequent batch
+versions; participant replay frames also retain the visible rollback moment.
+
+## Random community decks and used decks
+
+`GET /community/decks/random?format=<DeckFormat>&beta=<true|false>` is public and
+returns `CommunityRandomResult`: one full deck or `null`, plus `eligibleCount`.
+The server scans every public publication in batches of 128 within a repeatable-read
+transaction, revalidates legality for the requested format and beta eligibility,
+and uses reservoir sampling. Hidden and unpublished decks never participate.
+Memory stays bounded and the browser receives only one list. Requests have a rate
+limit and at most two concurrent scans per API process; SQL statements have a
+five-second timeout and the scan checks a ten-second deadline between batches.
+A failed scan returns an error instead of a partial pool.
+
+The lobby's All mystery pool combines personal, famous and community decks. The
+community candidate is selected with probability `eligibleCount / totalCount`,
+so each eligible deck has the same chance. Mine and Famous stay local. A pending
+selection disables launch; leaving the lobby or changing its rules cancels the
+pending launch.
+
+A seated client requests `usedDeck` after joining or reconnecting. The room answers
+only that client's frozen initial `UsedDeck`, including card order, artwork,
+name, format and optional community attribution. It never fetches the publication
+again. Casual series continuations restore the first game's deck and attribution
+from the series record. Spectators cannot request another seat's deck. The
+post-duel viewer copies this snapshot through the ordinary personal-deck save
+workflow; source edits, unpublishing and moderation cannot change that copy.
+
 ## Optional match timer
 
 Casual (`aegis` and `aegis_beta`) join options include `matchTimer: boolean`.

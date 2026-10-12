@@ -132,4 +132,12 @@ export class GameState extends Schema {
   /** Authoritative banlist choice, including after reconnect. Append to preserve field indexes. */
   @type("boolean") unlimited = false;
   @type("string") format = "standard";
+  @type("boolean") allowRollback = false;
+  @type("uint32") rollbackRevision = 0;
+  @type("string") rollbackRequestId = "";
+  @type("int8") rollbackRequesterSeat = -1;
+  @type("string") rollbackKind = "";
+  @type("boolean") rollbackBusy = false;
+  @type("boolean") canUndoAction = false;
+  @type("boolean") canRollbackTurn = false;
 }

@@ -252,6 +252,7 @@ export interface EffectSequence {
   causeOfObservedChange(sinceVersion: number, throughVersion?: number): PresentationGate | undefined;
   /** The newest batch revision observed, so a watcher can tell a change whose batch is still ahead. */
   observedVersion(): number;
+  unitAtVersion(stateVersion: number): EffectUnit | undefined;
   /** A batch at this revision was presented, whatever the pacing: the causes it carried are known. */
   noteVersion(stateVersion: number): void;
   /** Units opened and not yet settled. */
@@ -532,6 +533,9 @@ export function createEffectSequence(options: EffectSequenceOptions = {}): Effec
         )
           earliest = version;
       return earliest === undefined ? undefined : ownerByVersion.get(earliest)!.announced;
+    },
+    unitAtVersion(stateVersion) {
+      return ownerByVersion.get(stateVersion);
     },
     observedVersion() {
       return latestVersion;

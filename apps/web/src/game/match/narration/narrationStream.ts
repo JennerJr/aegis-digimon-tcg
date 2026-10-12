@@ -106,6 +106,18 @@ export interface NarrationStreamDeps {
   narrationRef: MutableRefObject<ReadonlyMap<string, NarrationItem>>;
 }
 
+type NarrationTrackParams = {
+  unitId: number | undefined;
+  resultUnitId: number | undefined;
+  sharedTrack: string;
+};
+
+function narrationTrack({ unitId, resultUnitId, sharedTrack }: NarrationTrackParams): string {
+  if (unitId !== undefined) return `effectClause-${unitId}`;
+  if (resultUnitId !== undefined) return `effectResults-${resultUnitId}`;
+  return sharedTrack;
+}
+
 /** An effect's draw on its way to the hand; a turn's own draw is no clause's result. */
 function isEffectDrawFlight(step: AnimationStep): boolean {
   return step.id.startsWith("draw-flight-") && step.track?.startsWith("drawFlight-") === true;
@@ -268,7 +280,11 @@ export function narrationStream(deps: NarrationStreamDeps) {
        the earlier effect, until a ceiling broke the cycle. The unit order already keeps
        clauses in turn; the wait below keeps one behind its card's arrival. */
     const ownTrack = unit !== undefined;
-    const track = ownTrack ? `effectClause-${unit.id}` : sharedTrack;
+    const resultUnit =
+      presentationPacingRef.current === "sequential" && itemVersion !== undefined && body?.variant !== "keyword"
+        ? effectSequence.unitAtVersion(itemVersion)
+        : undefined;
+    const track = narrationTrack({ unitId: unit?.id, resultUnitId: resultUnit?.id, sharedTrack });
     // The same permanent may evolve because of this very On Play. That future arrival
     // waits for this clause, so waiting on its id alone creates a cycle. An originless
     // physical arrival remains supported for legacy recipes; generic tracks need proof.
@@ -325,6 +341,12 @@ export function narrationStream(deps: NarrationStreamDeps) {
               (step.origin?.stateVersion === undefined ? !unit : step.origin.stateVersion < (itemVersion ?? 0)),
           )
         : new Set<string>();
+    const earlierDrawGate = earlierDrawFlights.size > 0 && !costClause ? createPresentationGate() : undefined;
+    if (earlierDrawGate) {
+      earlierDrawGate.after = unit?.started ?? announceGate?.after;
+      if (unitAnnouncement) unitAnnouncement.after = earlierDrawGate;
+      if (announceGate) announceGate.after = earlierDrawGate;
+    }
     queue.enqueue({
       id: `narration-step-${item.id}`,
       origin,
@@ -339,6 +361,7 @@ export function narrationStream(deps: NarrationStreamDeps) {
       holdsBoard: false,
       blocksDecision: false,
       onDiscard() {
+        earlierDrawGate?.release();
         announceGate?.release();
         unitAnnouncement?.release();
         costClause?.focused.release();
@@ -354,6 +377,7 @@ export function narrationStream(deps: NarrationStreamDeps) {
         try {
           await runNarrationStep();
         } finally {
+          earlierDrawGate?.release();
           announceGate?.release();
           unitAnnouncement?.release();
           costClause?.focused.release();
@@ -437,6 +461,7 @@ export function narrationStream(deps: NarrationStreamDeps) {
             // Let this batch register its deletion beats before locating the source.
             await Promise.resolve();
             await waitForEarlierBeats(earlierDrawFlights, context);
+            earlierDrawGate?.release();
             if (context.cancelled || narrationSkipRef.current) return;
             for (const deleted of item.notice?.afterDeletions ?? []) {
               const burst = deletionReadyAtRef.current.get(`${deleted.seat}:${deleted.cardId}`);
@@ -625,7 +650,7 @@ export function narrationStream(deps: NarrationStreamDeps) {
 
   /** A later clause waits for draws that were already in flight when it was raised. */
   async function waitForEarlierBeats(earlierDrawFlights: ReadonlySet<string>, context: AnimationStepContext) {
-    const deadline = Date.now() + CONSEQUENCE_GATE_MAX_MS;
+    const deadline = Date.now() + QUEUED_GATE_MAX_MS;
     while (
       queue.hasPendingStep((step) => earlierDrawFlights.has(step.id)) &&
       Date.now() < deadline &&

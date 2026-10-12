@@ -422,3 +422,85 @@ describe("moderation", () => {
     expect(await (await moderate(id, admin, "restore")).json()).toEqual({ status: "unpublished" });
   });
 });
+
+describe("community random selection", () => {
+  it("draws from public decks beyond the first browse page and excludes hidden, unpublished and illegal lists", async () => {
+    const author = await signIn("Random Author");
+    const published = await saveAndPublish(author, "random-source", "Random Source");
+    await harness.store.pool.query("UPDATE public_decks SET status='hidden' WHERE id=$1", [published.id]);
+    for (let n = 1; n <= 130; n += 1) {
+      await harness.store.pool.query(
+        `INSERT INTO public_decks (id,account_id,source_deck_id,name,colors,main_deck,egg_deck,main_deck_arts,egg_deck_arts,published_at,updated_at,status)
+         SELECT $2,account_id,$3,name,colors,main_deck,egg_deck,main_deck_arts,egg_deck_arts,published_at,updated_at,'public' FROM public_decks WHERE id=$1`,
+        [published.id, `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`, `random-${n}`],
+      );
+    }
+    const result = await call("/community/decks/random?format=standard&beta=false");
+    expect(result.status).toBe(200);
+    const selection = (await result.json()) as { eligibleCount: number; deck: CommunityDeck };
+    expect(selection.eligibleCount).toBe(130);
+    expect(selection.deck.status).toBe("public");
+    expect(selection.deck.id).not.toBe(published.id);
+    expect(selection.deck.mainDeck).toEqual(redList!.mainDeck);
+    await harness.store.pool.query("UPDATE public_decks SET status='unpublished' WHERE source_deck_id='random-1'");
+    await harness.store.pool.query("UPDATE public_decks SET status='hidden' WHERE source_deck_id='random-2'");
+    await harness.store.pool.query("UPDATE public_decks SET main_deck='[]'::jsonb WHERE source_deck_id='random-3'");
+    const filtered = (await (await call("/community/decks/random?format=standard")).json()) as {
+      eligibleCount: number;
+    };
+    expect(filtered.eligibleCount).toBe(127);
+    await harness.store.pool.query(
+      "UPDATE public_decks SET main_deck='[]'::jsonb WHERE source_deck_id <> 'random-130'",
+    );
+    const last = (await (await call("/community/decks/random")).json()) as {
+      eligibleCount: number;
+      deck: CommunityDeck;
+    };
+    expect(last.eligibleCount).toBe(1);
+    expect(last.deck.id).toBe("00000000-0000-4000-8000-000000000130");
+  });
+  it("refuses unknown formats and beta values", async () => {
+    expect((await call("/community/decks/random?format=unknown")).status).toBe(400);
+    expect((await call("/community/decks/random?beta=yes")).status).toBe(400);
+  });
+});
+
+it("filters random community decks by beta, historical pool, Pauper and Unlimited rules", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-09-15T12:00:00Z"));
+  try {
+    const author = await signIn("Format Author");
+    const { id } = await saveAndPublish(author, "formats-source", "Format Source");
+    const betaMain = [...redList!.mainDeck];
+    betaMain[0] = "EX13-007";
+    await harness.store.pool.query("UPDATE public_decks SET main_deck=$1 WHERE id=$2", [JSON.stringify(betaMain), id]);
+    const released = await (await call("/community/decks/random?beta=false")).json();
+    expect(released).toEqual({ deck: null, eligibleCount: 0 });
+    const beta = (await (await call("/community/decks/random?beta=true")).json()) as {
+      eligibleCount: number;
+      deck: CommunityDeck;
+    };
+    expect(beta.eligibleCount).toBe(1);
+    expect(beta.deck.mainDeck).toEqual(betaMain);
+    expect(await (await call("/community/decks/random?format=BT1&beta=true")).json()).toEqual({
+      deck: null,
+      eligibleCount: 0,
+    });
+    expect(await (await call("/community/decks/random?format=pauper&beta=true")).json()).toEqual({
+      deck: null,
+      eligibleCount: 0,
+    });
+    const bannedMain = [...redList!.mainDeck];
+    bannedMain[0] = "BT5-109";
+    await harness.store.pool.query("UPDATE public_decks SET main_deck=$1 WHERE id=$2", [
+      JSON.stringify(bannedMain),
+      id,
+    ]);
+    const unlimited = (await (await call("/community/decks/random?format=unlimited")).json()) as {
+      eligibleCount: number;
+    };
+    expect(unlimited.eligibleCount).toBe(1);
+  } finally {
+    vi.useRealTimers();
+  }
+});

@@ -457,7 +457,7 @@ export class GameEngine {
     this.win = new WinCheck(this.state, this.hooks.emit);
     this.tracker = new UseTracker();
     this.modifiers = new ModifierLedger();
-    this.modifiers.bindContinuous(this.continuous);
+    this.modifiers.bindContinuous(this.continuous, () => this.combat?.currentAttackerId);
     this.subTriggers = new SubTriggerRegistry();
     this.decisions = new DecisionManager(
       this.state,

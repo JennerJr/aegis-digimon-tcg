@@ -1,3 +1,9 @@
+import { RollbackHistory } from "#api/rooms/RollbackHistory";
+import { RollbackKind, ROLLBACK_CHANNEL, ROLLBACK_RESET_CHANNEL } from "@aegis/shared/protocol/RollbackKind";
+import type { GameEngineHooks } from "#api/engine/gameEngine/types";
+import type { ReplayInput } from "#api/replays/inputs/types";
+
+import { USED_DECK_CHANNEL, type UsedDeck } from "@aegis/shared/decks/UsedDeck";
 import { validateDecklist } from "../engine/deckValidation.js";
 import { log, logError, withMatchLog } from "../logger.js";
 import { CloseCode, Room, Client, ServerError, matchMaker, type Delayed } from "colyseus";
@@ -108,6 +114,7 @@ function generateRoomCode(length = 6): string {
 }
 
 interface RoomCreateOptions extends Partial<SeriesContinuationOptions> {
+  allowRollback?: boolean;
   matchTimer?: boolean;
   bestOf?: unknown;
   timerStartSeconds?: number;
@@ -196,6 +203,7 @@ function combatWindowEvent(window: CombatWindow): ServerEvent | undefined {
  * brackets keep running until the manager takes them over.
  */
 export interface AegisJoinOptions extends SeatJoinOptions {
+  allowRollback?: boolean;
   spectator?: boolean;
   botDeck?: SeatJoinOptions["deck"];
   matchTimer?: boolean;
@@ -206,6 +214,7 @@ export interface AegisJoinOptions extends SeatJoinOptions {
   seriesToken?: string;
   deckId?: string;
   deckName?: string;
+  community?: import("@aegis/shared/decks/UsedDeck").UsedDeck["community"];
   roomCode?: string; // for joining a private room by code
   ranked?: boolean;
   authTicket?: string;
@@ -286,6 +295,11 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
   /** The raw name each spectator joined with; `spectatorChatName` decides whether to show it. */
   private spectatorJoinNames = new Map<string, string>();
   private accountByClient = new Map<string, string>();
+  private rollbackHistory?: RollbackHistory;
+  private engineHooks!: GameEngineHooks;
+  private engineGeneration = 0;
+  private rollbackSequence = 0;
+  private rollbackPending?: { id: string; seat: Seat; target: { index: number; turn?: number } };
   private replayRecording?: ReplayRecording;
   private replayDownloads = new Map<Seat, Promise<ReplayDownloadMessage>>();
   private replayFinished = false;
@@ -297,7 +311,7 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
   private rankedByClient = new Map<string, boolean>();
   /** Clients that pace chains of triggered effects themselves (`presentationPacing: "sequential"`). */
   private chainPacingClients = new Set<string>();
-  private deckByClient = new Map<string, DeckSnapshot>();
+  private deckByClient = new Map<string, UsedDeck>();
   /**
    * Every StateView this room handed out, disposed with the room. @colyseus/schema's GC
    * backstop for undisposed views holds the state Root strongly, and the Root reaches this
@@ -436,6 +450,14 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
     if (!this.isPrivate && deckFormat(options.format, options.unlimited) !== this.state.format) return false;
     if (options.botDeck && (!this.isBotRoom || !this.validCustomBotDeck(options.botDeck))) return false;
     // A guest of a private room plays whatever the host set; a public joiner must have asked for it.
+    if (
+      !this.isPrivate &&
+      !this.isBotRoom &&
+      !this.isRankedRoom &&
+      !this.isTournamentRoom &&
+      (options.allowRollback === true) !== this.state.allowRollback
+    )
+      return false;
     if (!this.isPrivate && this.offersSeries() && matchBestOf(options.bestOf) !== this.bestOf) return false;
     if (
       (this.isRankedRoom || this.isTournamentRoom) &&
@@ -473,6 +495,7 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
     };
     options.deckId = entry.deckId;
     options.deckName = entry.deckName;
+    options.community = entry.community;
     options.presentationPacing = entry.presentationPacing;
     options.ranked = false;
     options.betaBattleMode = this.isBetaBattleRoom;
@@ -599,6 +622,7 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
       format: record.format,
       allowFormatSelection: options.allowFormatSelection,
       tournamentRoom: options.tournamentRoom,
+      allowRollback: record.allowRollback === true,
       matchTimer: record.matchTimer,
       timerStartSeconds: record.timerStartSeconds,
       bestOf: record.bestOf,
@@ -690,22 +714,41 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
           bestOf: this.bestOf,
           unlimited: this.isUnlimitedRoom,
           format: this.state.format as DeckFormat,
+          allowRollback: options.allowRollback === true,
           matchTimer: options.matchTimer === true,
           timerStartSeconds: options.timerStartSeconds ?? 300,
           ...(this.isPrivate ? { roomCode: this.state.roomCode } : {}),
         });
     }
-    this.engine = new GameEngine(this.state, {
+    this.state.allowRollback = options.allowRollback === true && !this.isRankedRoom && !this.isTournamentRoom;
+    if (this.state.allowRollback)
+      this.rollbackHistory = new RollbackHistory({
+        seed,
+        firstSeat: this.casualSeries?.fixedFirstSeat,
+        matchId: this.state.matchLogId,
+        rules: {
+          deckFormat: this.state.format as DeckFormat,
+          unlimited: this.state.unlimited,
+          betaBattle: this.isBetaBattleRoom,
+        },
+      });
+    this.engineHooks = {
+      beforeTurn: (turn) => {
+        this.rollbackHistory?.beforeTurn(turn, this.state);
+        this.refreshRollbackAvailability();
+      },
       seed,
       ...(this.casualSeries?.fixedFirstSeat !== undefined ? { firstSeat: this.casualSeries.fixedFirstSeat } : {}),
       requestDecision: (seat, req) => this.requestDecision(seat, req),
       onBothReady: () => this.atReplaySite("bothReady", () => this.startMatchNow()),
       onActionSettled: (seat, intentType) => {
+        this.refreshRollbackAvailability();
         this.bots[seat]?.onActionSettled(intentType);
       },
       emit: (event) => {
         if (event.kind === "cardPlayed" || event.kind === "digivolved") this.matchClock?.grantCardBonus(event.seat);
         this.engineEvents += 1;
+        this.refreshRollbackAvailability();
         if (event.kind === "matchStarted" && !this.devScenario && !this.replayRecording) {
           this.replayRecording = new ReplayRecording();
         }
@@ -785,7 +828,8 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
         for (const bot of this.bots) bot?.onEvent(event);
         this.syncCombatWindowTimeout();
       },
-    });
+    };
+    this.engine = new GameEngine(this.state, this.guardedEngineHooks());
     const firstSeat = this.casualSeries?.fixedFirstSeat;
     const serverRevision = process.env.AEGIS_REVISION;
     this.debug("replay.header", {
@@ -809,6 +853,16 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
     // "actionRejected" event to the offending client only.
     this.onMessage("*", (client, type, payload) => {
       if (!this.admitClientMessage(client)) return;
+      if (type === ROLLBACK_CHANNEL) {
+        void this.handleRollback(client, payload);
+        return;
+      }
+
+      if (type === USED_DECK_CHANNEL) {
+        const deck = this.deckByClient.get(client.sessionId);
+        if (deck && !this.spectatorClients.has(client.sessionId)) client.send(USED_DECK_CHANNEL, structuredClone(deck));
+        return;
+      }
       if (type === REPLAY_CHANNEL) {
         const now = performance.now();
         if (now - (this.replayRequestTimes.get(client) ?? -Infinity) >= 10_000) {
@@ -818,6 +872,12 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
         return;
       }
       if (type === PRESENTATION_CHANNEL) {
+        if (
+          this.state.rollbackBusy ||
+          (this.state.rollbackRevision > 0 &&
+            (payload as { rollbackRevision?: unknown })?.rollbackRevision !== this.state.rollbackRevision)
+        )
+          return;
         this.handlePresentationReport(client, payload);
         return;
       }
@@ -834,6 +894,13 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
         if (seat !== undefined) this.casualSeries?.handleMessage(seat, payload, this.matchStartRequested);
         return;
       }
+      if (this.state.rollbackBusy || this.rollbackPending) return;
+      if (
+        this.state.allowRollback &&
+        this.state.rollbackRevision > 0 &&
+        (payload as { rollbackRevision?: unknown })?.rollbackRevision !== this.state.rollbackRevision
+      )
+        return;
       this.handleIntent(client, { type, ...(payload as object) } as Intent);
     });
 
@@ -864,10 +931,12 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
     return !this.isBotRoom && !this.isRankedRoom && !this.isTournamentRoom && this.devScenario === undefined;
   }
 
-  /** Built once the state exists; a room never replaces its state, so the port can hold it. */
   private seriesPort(): SeriesRoomPort {
+    const currentState = () => this.state;
     return {
-      state: this.state,
+      get state() {
+        return currentState();
+      },
       roomName: this.roomName,
       setTimeout: (run, ms) => this.clock.setTimeout(run, ms),
       setInterval: (run, ms) => this.clock.setInterval(run, ms),
@@ -887,6 +956,7 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
           },
           ...(deck.deckId ? { deckId: deck.deckId } : {}),
           deckName: deck.deckName,
+          community: deck.community ? structuredClone(deck.community) : undefined,
           presentationPacing: this.chainPacingClients.has(player.sessionId) ? "sequential" : "current",
         };
       },
@@ -1258,6 +1328,8 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
     this.deckByClient.set(client.sessionId, {
       deckId: options.deckId ?? null,
       deckName: options.deckName ?? "Deck sem nome",
+      format: this.state.format as DeckFormat,
+      community: validCommunityAttribution(options.community),
       mainDeck: [...options.deck.mainDeck],
       eggDeck: [...options.deck.eggDeck],
       mainDeckArts: options.deck.mainDeckArts?.slice(),
@@ -1506,6 +1578,17 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
         format: this.state.format as DeckFormat,
       }).ok
     );
+  }
+
+  requestBot({ reconnectionToken, botDeckId }: { reconnectionToken: string; botDeckId?: string }): number {
+    const player = this.clients.find(
+      (client) =>
+        client.reconnectionToken &&
+        `${this.roomId}:${client.reconnectionToken}` === reconnectionToken &&
+        this.seatByClient.has(client.sessionId),
+    );
+    if (!player) return 403;
+    return this.addBot(botDeckId) ? 200 : 409;
   }
 
   addBot(botDeckId?: string): boolean {
@@ -1958,6 +2041,12 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
    * it back in order. Intents are recorded by `applyLoggedIntent` instead.
    */
   private recordReplayInput(input: ReplayRoomInput): void {
+    this.invalidateRollbackRequest();
+    this.rollbackHistory?.append({
+      ...input,
+      ...this.rollbackPlacement(),
+      ...(this.replaySite ? { site: this.replaySite } : {}),
+    });
     this.debug("replay.input", {
       replaySeq: this.nextReplaySeq(),
       stateVersion: this.state.stateVersion,
@@ -1983,6 +2072,14 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
 
   /** Log the deck a seat was just given; `player.join` names the session but not the seat. */
   private recordReplaySeat(seat: Seat, deck: ReplayDeck, deckRules: ReplayDeckRules, bot?: true): void {
+    this.rollbackHistory?.append({
+      kind: "seat",
+      seat,
+      deck,
+      deckRules,
+      ...(bot ? { bot } : {}),
+      ...this.rollbackPlacement(),
+    });
     this.debug("replay.seat", {
       replaySeq: this.nextReplaySeq(),
       seat,
@@ -2157,6 +2254,11 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
   private applyLoggedIntent(seat: Seat, intent: Intent) {
     return withMatchLog(this.state.matchLogId, this.roomId, () => {
       this.syncMatchClock();
+      if (this.state.rollbackBusy || this.rollbackPending)
+        return { ok: false as const, reason: "wrong-phase" as const };
+      const actionIndex = this.rollbackHistory?.inputs.length;
+      const recorded: ReplayInput = { kind: "intent", seat, intent, ...this.rollbackPlacement() };
+      this.rollbackHistory?.append(recorded, this.state);
       const started = performance.now();
       const replaySeq = this.nextReplaySeq();
       log("intent.received", {
@@ -2168,6 +2270,22 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
       });
       try {
         const result = this.withBatch(() => this.engine.applyIntent(seat, intent));
+        if (actionIndex !== undefined) {
+          const entry = this.rollbackHistory?.inputs[actionIndex];
+          if (entry?.kind === "intent") {
+            entry.ok = result.ok;
+            if (!result.ok) entry.reason = result.reason;
+          }
+          if (
+            result.ok &&
+            this.state.turnCount > 0 &&
+            intent.type !== "ready" &&
+            intent.type !== "mulligan" &&
+            intent.type !== "surrender"
+          )
+            this.rollbackHistory?.acceptAction(actionIndex);
+        }
+        this.refreshRollbackAvailability();
         this.atReplaySite("afterIntent", () => this.syncMatchClock());
         log("intent.result", {
           seat,
@@ -2183,6 +2301,190 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
         throw error;
       }
     });
+  }
+
+  private guardedEngineHooks(): GameEngineHooks {
+    const generation = this.engineGeneration;
+    const current = () => generation === this.engineGeneration;
+    return {
+      ...this.engineHooks,
+      emit: (event) => {
+        if (current()) this.engineHooks.emit(event);
+      },
+      requestDecision: (seat, request) => {
+        if (current()) this.engineHooks.requestDecision(seat, request);
+      },
+      beforeTurn: (turn) => {
+        if (current()) return this.engineHooks.beforeTurn?.(turn);
+      },
+      onBothReady: () => {
+        if (current()) this.engineHooks.onBothReady?.();
+      },
+      onActionSettled: (seat, type) => {
+        if (current()) this.engineHooks.onActionSettled?.(seat, type);
+      },
+    };
+  }
+
+  private rollbackPlacement() {
+    return {
+      stateVersion: this.state.stateVersion - (this.rollbackHistory?.versionOffset ?? 0),
+      engineEvents: this.engineEvents,
+    };
+  }
+
+  private invalidateRollbackRequest(): void {
+    this.rollbackPending = undefined;
+    this.state.rollbackRequestId = "";
+    this.state.rollbackRequesterSeat = -1;
+    this.state.rollbackKind = "";
+  }
+
+  private refreshRollbackAvailability(): void {
+    const enabled = this.state.allowRollback && !this.state.gameOver && this.state.turnCount > 0;
+    this.state.canUndoAction =
+      enabled && this.rollbackHistory?.target(RollbackKind.ACTION.value, this.state.turnCount) !== undefined;
+    this.state.canRollbackTurn =
+      enabled && this.rollbackHistory?.target(RollbackKind.TURN.value, this.state.turnCount) !== undefined;
+    if (this.state.gameOver) this.invalidateRollbackRequest();
+  }
+
+  private async handleRollback(client: Client, payload: unknown): Promise<void> {
+    const seat = this.seatByClient.get(client.sessionId);
+    if (
+      seat === undefined ||
+      !this.state.allowRollback ||
+      this.isRankedRoom ||
+      this.isTournamentRoom ||
+      this.state.gameOver ||
+      this.state.rollbackBusy ||
+      !this.rollbackHistory ||
+      typeof payload !== "object" ||
+      payload === null
+    )
+      return;
+    const message = payload as Record<string, unknown>;
+    if (message.revision !== this.state.rollbackRevision || this.state.players.some((player) => !player.connected))
+      return;
+    if (message.type === "cancel") {
+      if (this.rollbackPending?.seat === seat && this.rollbackPending.id === message.requestId)
+        this.invalidateRollbackRequest();
+      return;
+    }
+    if (message.type === "respond") {
+      const pending = this.rollbackPending;
+      if (!pending || pending.id !== message.requestId || pending.seat === seat || typeof message.accept !== "boolean")
+        return;
+      if (!message.accept) {
+        this.invalidateRollbackRequest();
+        return;
+      }
+      await this.performRollback(pending.target);
+      return;
+    }
+    if (message.type !== "request" || this.rollbackPending) return;
+    const kind = message.kind;
+    if (kind !== RollbackKind.ACTION.value && kind !== RollbackKind.TURN.value) return;
+    const target = this.rollbackHistory.target(kind, this.state.turnCount);
+    if (!target) return;
+    const opponent = (1 - seat) as Seat;
+    if (this.bots[opponent]) {
+      await this.performRollback(target);
+      return;
+    }
+    this.rollbackPending = { id: `rollback-${++this.rollbackSequence}`, seat, target };
+    this.state.rollbackRequestId = this.rollbackPending.id;
+    this.state.rollbackRequesterSeat = seat;
+    this.state.rollbackKind = kind;
+  }
+
+  private async performRollback(target: { index: number; turn?: number }): Promise<void> {
+    const history = this.rollbackHistory;
+    if (!history) return;
+    this.state.rollbackBusy = true;
+    this.invalidateRollbackRequest();
+    const generation = this.engineGeneration;
+    const source = this.engine;
+    try {
+      const rebuilt = await history.rebuild(target);
+      if (generation !== this.engineGeneration || source.state.gameOver) {
+        rebuilt.state.gameOver = true;
+        rebuilt.engine.decisions.cancel();
+        return;
+      }
+      const previous = this.state;
+      const version = previous.stateVersion + 1;
+      history.commit(target, rebuilt.state, version);
+      history.versionOffset += rebuilt.resumeBatchOffset;
+      this.engineGeneration += 1;
+      for (const bot of this.bots) bot?.dispose();
+      source.state.gameOver = true;
+      source.installVisibility(() => {});
+      source.decisions.cancel();
+      source.combat.cancel();
+      source.mainPhase.abort();
+      source.breeding.abort();
+      this.combatWindowTimeout?.clear();
+      this.combatWindowTimeout = undefined;
+      this.combatWindowTimeoutKey = undefined;
+      this.openSecurityReveal = undefined;
+      const restored = rebuilt.state;
+      restored.matchId = previous.matchId;
+      restored.matchLogId = previous.matchLogId;
+      restored.roomCode = previous.roomCode;
+      restored.spectatorCode = previous.spectatorCode;
+      restored.series.assign(previous.series.toJSON());
+      restored.allowRollback = true;
+      restored.rollbackRevision = previous.rollbackRevision + 1;
+      for (const seat of [0, 1] as const) {
+        const identity = previous.players[seat]!;
+        const player = restored.players[seat]!;
+        player.sessionId = identity.sessionId;
+        player.displayName = identity.displayName;
+        player.avatarId = identity.avatarId;
+        player.connected = identity.connected;
+      }
+      restored.stateVersion = version;
+      this.engine = rebuilt.engine;
+      this.setState(restored);
+      this.engineEvents = rebuilt.engineEvents;
+      this.matchClock?.rebindAfterRollback(restored, previous, performance.now());
+      this.pendingDecisionRequest = rebuilt.pendingRequest;
+      this.engine.installVisibility(this.exposeCardToClients);
+      for (const client of this.clients) {
+        const seat = this.seatByClient.get(client.sessionId);
+        if (seat !== undefined || this.spectatorClients.has(client.sessionId)) this.assignView(client, seat);
+      }
+      for (const seat of [0, 1] as const) this.bots[seat] = this.bots[seat]?.restartAfterRollback(restored);
+      this.debug("replay.rollback", {
+        replaySeq: this.nextReplaySeq(),
+        index: target.index,
+        versionOffset: history.versionOffset,
+      });
+      this.replayRecording?.capture(restored, []);
+      this.broadcast(ROLLBACK_RESET_CHANNEL, { revision: restored.rollbackRevision });
+      this.engine.syncCounts();
+      for (const client of this.clients) {
+        if (typeof client.raw === "function") {
+          const room = this as unknown as { sendFullState(client: Client): void };
+          room.sendFullState(client);
+        }
+      }
+      this.broadcastPatch();
+      rebuilt.activate(this.guardedEngineHooks());
+      this.refreshRollbackAvailability();
+      if (rebuilt.pendingRequest) this.requestDecision(rebuilt.pendingRequest.seat, rebuilt.pendingRequest);
+      const windowEvent = restored.combatWindow ? combatWindowEvent(restored.combatWindow) : undefined;
+      if (windowEvent) for (const bot of this.bots) bot?.onEvent(windowEvent);
+      for (const bot of this.bots) bot?.resumeAfterRollback();
+      this.syncCombatWindowTimeout();
+    } catch (error) {
+      this.debugError("[AegisRoom] rollback reconstruction refused", error);
+      this.broadcast(ROLLBACK_CHANNEL, { type: "failed" });
+    } finally {
+      this.state.rollbackBusy = false;
+      this.refreshRollbackAvailability();
+    }
   }
 
   private handleIntent(client: Client, intent: Intent): void {
@@ -2258,4 +2560,18 @@ export class AegisRoom extends Room<{ state: GameState; metadata: { unlimited: b
     // The engine awaits the matching "respondDecision" intent (correlated by decisionId).
     client?.send(DECISION_CHANNEL, { ...req, stateVersion: this.decisionStateVersion() });
   }
+}
+
+function validCommunityAttribution(value: AegisJoinOptions["community"]): AegisJoinOptions["community"] {
+  if (
+    !value ||
+    typeof value.id !== "string" ||
+    value.id.length > 64 ||
+    typeof value.author?.id !== "string" ||
+    value.author.id.length > 64 ||
+    typeof value.author.displayName !== "string" ||
+    value.author.displayName.length > 100
+  )
+    return undefined;
+  return { id: value.id, author: { id: value.author.id, displayName: value.author.displayName } };
 }

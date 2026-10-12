@@ -76,7 +76,9 @@ it.each([390, 1024])("#5332 cost picker maps Tamer tops and dispatches payment a
     { instanceId: "s0-28", cardId: "BT25-090", zone: "battle" },
   ]);
   const send = vi.fn<(type: string, payload: unknown) => void>();
-  const room = { send, connection: { isOpen: true } } as unknown as Parameters<typeof intents.respondDecision>[0];
+  const room = { state, send, connection: { isOpen: true } } as unknown as Parameters<
+    typeof intents.respondDecision
+  >[0];
   function Picker() {
     const [picks, setPicks] = useState<string[]>([]);
     const allows = (instanceId: string) => decisionAllowsPick({ ...view, instanceId, picks });
@@ -127,6 +129,7 @@ it.each([390, 1024])("#5332 cost picker maps Tamer tops and dispatches payment a
     fireEvent.click(screen.getByRole("button", { name: id }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm targets" }));
     expect(send).toHaveBeenLastCalledWith("respondDecision", {
+      rollbackRevision: 0,
       decisionId: "dec-32",
       response: { kind: "selectCards", instanceIds: [id] },
     });
