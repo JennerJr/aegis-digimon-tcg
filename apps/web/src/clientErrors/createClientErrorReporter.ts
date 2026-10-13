@@ -9,6 +9,7 @@ import {
   MAX_CLIENT_ERROR_USER_AGENT,
 } from "@aegis/shared/clientErrors/clientErrorLimits";
 import { buildClientErrorSignature } from "@/clientErrors/buildClientErrorSignature";
+import { isForeignClientError } from "@/clientErrors/isForeignClientError";
 
 export const MAX_CLIENT_ERROR_REPORTS_PER_SESSION = 20;
 
@@ -102,6 +103,9 @@ export function createClientErrorReporter({
     try {
       const page = readPage();
       const details = readErrorDetails(error);
+      if (isForeignClientError({ message: details.message, stack: details.stack, origin: page.origin })) {
+        return;
+      }
       const stack = componentStack ? `${details.stack}\n\nComponent stack:${componentStack}` : details.stack;
       const signature = buildClientErrorSignature({ message: details.message, stack, origin: page.origin });
       if (reportedSignatures.has(signature)) {

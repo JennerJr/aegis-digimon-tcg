@@ -180,4 +180,35 @@ describe("client error delivery", () => {
       expect.objectContaining({ method: "POST", keepalive: true, body: JSON.stringify(report) }),
     );
   });
+  it("ignores cross-origin script errors that carry no stack", () => {
+    const { sent, reporter } = createHarness();
+    const target = new EventTarget();
+    installClientErrorListeners({ target, reporter });
+    target.dispatchEvent(Object.assign(new Event("error"), { message: "Script error.", filename: "" }));
+    expect(sent).toEqual([]);
+  });
+
+  it("ignores errors raised only inside browser extensions", () => {
+    const { sent, reporter } = createHarness();
+    const error = new TypeError("Cannot read properties of undefined (reading 'M_ID')");
+    error.stack = [
+      "TypeError: Cannot read properties of undefined (reading 'M_ID')",
+      "    at Y (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:761)",
+      "    at E (chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js:1:1442)",
+    ].join("\n");
+    reporter.capture({ kind: ClientErrorKind.UNHANDLED_REJECTION.value, error });
+    expect(sent).toEqual([]);
+  });
+
+  it("still reports an app error that passes through an extension frame", () => {
+    const { sent, reporter } = createHarness();
+    const error = new Error("boom");
+    error.stack = [
+      "Error: boom",
+      "    at wrap (chrome-extension://abc/content.js:1:10)",
+      "    at f (https://aegis-digi.online/assets/GameScreen-a.js:3:5)",
+    ].join("\n");
+    reporter.capture({ kind: ClientErrorKind.ERROR.value, error });
+    expect(sent.map((report) => report.signature)).toEqual(["Error: boom @ /assets/GameScreen-a.js:3:5"]);
+  });
 });
