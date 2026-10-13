@@ -70,7 +70,7 @@ const draft = {
 
 describe("the public roadmap", () => {
   it("starts with Ranked planned and its description, and nothing under review", async () => {
-    const { items } = (await (await call("/roadmap")).json()) as { items: RoadmapItem[] };
+    const { items } = (await (await call("/community/roadmap")).json()) as { items: RoadmapItem[] };
     expect(items).toEqual([
       expect.objectContaining({
         title: "Ranked / Leaderboard",
@@ -81,21 +81,23 @@ describe("the public roadmap", () => {
   });
 
   it("lets a signed-in player support an item once and take the support back", async () => {
-    const { items } = (await (await call("/roadmap")).json()) as { items: RoadmapItem[] };
+    const { items } = (await (await call("/community/roadmap")).json()) as { items: RoadmapItem[] };
     const target = items.at(-1)!;
     for (let attempt = 0; attempt < 2; attempt++) {
-      const supported = await call(`/roadmap/${target.id}/support`, {
+      const supported = await call(`/community/roadmap/${target.id}/support`, {
         method: "PUT",
         cookie: harness.player,
         body: { supported: true },
       });
       expect(await supported.json()).toMatchObject({ id: target.id, supportCount: 1, supported: true });
     }
-    const board = (await (await call("/roadmap", { cookie: harness.player })).json()) as { items: RoadmapItem[] };
+    const board = (await (await call("/community/roadmap", { cookie: harness.player })).json()) as {
+      items: RoadmapItem[];
+    };
     expect(board.items[0]).toMatchObject({ id: target.id, supportCount: 1, supported: true });
-    const anonymous = (await (await call(`/roadmap/${target.id}`)).json()) as RoadmapItemDetail;
+    const anonymous = (await (await call(`/community/roadmap/${target.id}`)).json()) as RoadmapItemDetail;
     expect(anonymous).toMatchObject({ supportCount: 1, supported: false });
-    const withdrawn = await call(`/roadmap/${target.id}/support`, {
+    const withdrawn = await call(`/community/roadmap/${target.id}/support`, {
       method: "PUT",
       cookie: harness.player,
       body: { supported: false },
@@ -104,14 +106,26 @@ describe("the public roadmap", () => {
   });
 
   it("asks guests to sign in before supporting", async () => {
-    const response = await call("/roadmap/1/support", { method: "PUT", body: { supported: true } });
+    const response = await call("/community/roadmap/1/support", { method: "PUT", body: { supported: true } });
     expect(response.status).toBe(401);
   });
 
+  it("keeps serving the board at the legacy /roadmap path", async () => {
+    const legacy = (await (await call("/roadmap")).json()) as { items: RoadmapItem[] };
+    const current = (await (await call("/community/roadmap")).json()) as { items: RoadmapItem[] };
+    expect(legacy).toEqual(current);
+  });
+
   it("answers 404 for an item that does not exist", async () => {
-    expect((await call("/roadmap/999")).status).toBe(404);
+    expect((await call("/community/roadmap/999")).status).toBe(404);
     expect(
-      (await call("/roadmap/999/support", { method: "PUT", cookie: harness.player, body: { supported: true } })).status,
+      (
+        await call("/community/roadmap/999/support", {
+          method: "PUT",
+          cookie: harness.player,
+          body: { supported: true },
+        })
+      ).status,
     ).toBe(404);
   });
 });

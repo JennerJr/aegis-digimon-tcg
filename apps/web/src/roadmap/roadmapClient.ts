@@ -3,11 +3,14 @@ import { AccountApiError, accountApi, request } from "@/account/client";
 
 export const roadmapClient = {
   list: (signal?: AbortSignal) =>
-    request<{ items: RoadmapItem[] }>("/roadmap", { signal, cache: "no-store" }).then((page) => page.items),
+    request<{ items: RoadmapItem[] }>("/community/roadmap", { signal, cache: "no-store" }).then((page) => page.items),
   detail: (id: number, signal?: AbortSignal) =>
-    request<RoadmapItemDetail>(`/roadmap/${id}`, { signal, cache: "no-store" }),
+    request<RoadmapItemDetail>(`/community/roadmap/${id}`, { signal, cache: "no-store" }),
   support: ({ id, supported }: { id: number; supported: boolean }) =>
-    request<RoadmapItemDetail>(`/roadmap/${id}/support`, { method: "PUT", body: JSON.stringify({ supported }) }),
+    request<RoadmapItemDetail>(`/community/roadmap/${id}/support`, {
+      method: "PUT",
+      body: JSON.stringify({ supported }),
+    }),
   forFeedback: (feedbackId: number, signal?: AbortSignal) =>
     request<{ item: RoadmapItemDetail | null }>(`/account/admin/feedback/${feedbackId}/roadmap`, {
       signal,

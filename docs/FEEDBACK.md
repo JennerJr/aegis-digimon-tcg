@@ -79,17 +79,18 @@ Migration 034 seeds 20 items from the curated community requests reviewed on
 
 ### Routing
 
-`/roadmap` is both a page and an API path. Production Caddy sends `/roadmap` and
-`/roadmap/*` requests to the API unless they accept `text/html`, the same rule the
-community deck API uses.
+`/roadmap` is the page. The web app calls the API under `/community/roadmap`, because the
+installed slot gateway already sends `/community/*` requests that do not accept `text/html` to
+the API. The API also answers the same routes at `/roadmap` for direct deployments, and the
+gateway source routes `/roadmap` the same way once it is reinstalled.
 
 ## API
 
 | Route                                     | Access    | Purpose                                |
 | ----------------------------------------- | --------- | -------------------------------------- |
-| `GET /roadmap`                            | Public    | All items, most supported first        |
-| `GET /roadmap/:id`                        | Public    | One item                               |
-| `PUT /roadmap/:id/support`                | Signed in | `{ supported: boolean }`               |
+| `GET /community/roadmap`                  | Public    | All items, most supported first        |
+| `GET /community/roadmap/:id`              | Public    | One item                               |
+| `PUT /community/roadmap/:id/support`      | Signed in | `{ supported: boolean }`               |
 | `POST /account/admin/roadmap`             | Admin     | Create, optionally from a report       |
 | `PUT /account/admin/roadmap/:id`          | Admin     | Replace title, text, column and link   |
 | `DELETE /account/admin/roadmap/:id`       | Admin     | Remove the item and its support        |

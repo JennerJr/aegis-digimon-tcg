@@ -35,14 +35,14 @@ export function installRoadmapRoutes({ app, store, session }: RoadmapRouteDeps):
     };
 
   app.get(
-    "/roadmap",
+    ["/community/roadmap", "/roadmap"],
     route("public", async (_req, res, auth) => {
       res.json({ items: await store.list(auth?.account.id) });
     }),
   );
 
   app.get(
-    "/roadmap/:id",
+    ["/community/roadmap/:id", "/roadmap/:id"],
     route("public", async (req, res, auth) => {
       const id = parseId(req.params.id);
       const item = id === undefined ? undefined : await store.detail({ id, accountId: auth?.account.id });
@@ -55,7 +55,7 @@ export function installRoadmapRoutes({ app, store, session }: RoadmapRouteDeps):
   );
 
   app.put(
-    "/roadmap/:id/support",
+    ["/community/roadmap/:id/support", "/roadmap/:id/support"],
     route("signedIn", async (req, res, auth) => {
       const id = parseId(req.params.id);
       const supported = req.body?.supported;

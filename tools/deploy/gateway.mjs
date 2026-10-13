@@ -66,7 +66,7 @@ function json(response, status, value) {
 export function isApiPath(path, headers) {
   return (
     /^\/(health|ready|matchmake|auth|account|room|bot|bug-reports)(\/|$)/.test(path) ||
-    (/^\/(tournaments|community|replays)(\/|$)/.test(path) && !headers.accept?.includes("text/html"))
+    (/^\/(tournaments|community|replays|roadmap)(\/|$)/.test(path) && !headers.accept?.includes("text/html"))
   );
 }
 

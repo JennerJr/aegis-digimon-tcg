@@ -75,7 +75,7 @@ class RoadmapPage {
       const method = request.method();
       const body = request.postData() ? request.postDataJSON() : undefined;
       this.requests.push({ method, path, body });
-      const itemMatch = /^\/(?:account\/admin\/)?roadmap\/(\d+)(\/support)?$/.exec(path);
+      const itemMatch = /^\/(?:account\/admin\/|community\/)?roadmap\/(\d+)(\/support)?$/.exec(path);
       const found = itemMatch ? this.items.find((entry) => entry.id === Number(itemMatch[1])) : undefined;
       if (path === "/auth/me") {
         if (!signedIn) return route.fulfill({ status: 401, json: { error: "authentication_required" } });
@@ -83,7 +83,7 @@ class RoadmapPage {
           json: { id: "roadmap-fixture", displayName: "Kai", isAdmin, avatarUrl: null, avatarId: null },
         });
       }
-      if (path === "/roadmap") return route.fulfill({ json: { items: this.items } });
+      if (path === "/community/roadmap") return route.fulfill({ json: { items: this.items } });
       if (itemMatch && !found) return route.fulfill({ status: 404, json: { error: "not_found" } });
       if (found && itemMatch?.[2]) {
         const supported = (body as { supported: boolean }).supported;
