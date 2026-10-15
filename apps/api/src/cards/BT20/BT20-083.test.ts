@@ -6,6 +6,7 @@ import { drainMicrotasks, type SeatSpec, setupEngine, settle } from "../../engin
 import { observe } from "../../engine/testkit/observe.js";
 import { compiled } from "./BT20-083.js";
 import "../BT1/BT1-085.js";
+import "#api/cards/BT13/BT13-007";
 import "./index.js";
 
 describe("BT20-083 Omekamon", () => {
@@ -85,6 +86,7 @@ describe("BT20-083 Omekamon", () => {
 
   it("naturally free-evolves into Omnimon only at one or fewer security cards", async () => {
     for (const [securityCount, evolves] of [
+      [0, true],
       [1, true],
       [2, false],
     ] as const) {
@@ -109,6 +111,35 @@ describe("BT20-083 Omekamon", () => {
       expect(s.state.players[0]!.battleArea[0]!.topCard.cardId).toBe(expectedTop);
     }
   });
+
+  it.each([true, false])(
+    "checks King Drasil before offering the free On Play evolution at zero security (present=%s)",
+    async (hasKingDrasil) => {
+      const s = setupEngine(
+        {
+          0: {
+            breeding: hasKingDrasil ? { card: "BT13-007", as: "kingDrasil" } : undefined,
+            hand: [
+              { card: "BT20-083", as: "omekamon" },
+              { card: "BT20-102", as: "omnimon" },
+            ],
+            security: [],
+          },
+        },
+        { autoAcceptOptional: true, autoSelectCards: true },
+      );
+      s.state.memory = 5;
+      await s.ready();
+      expect(s.engine.applyIntent(0, { type: "playCard", instanceId: s.inst("omekamon").instanceId })).toEqual({
+        ok: true,
+      });
+      await drainMicrotasks();
+      const evolves = !hasKingDrasil;
+      expect(s.state.players[0]!.battleArea[0]?.topCard.cardId).toBe(evolves ? "BT20-102" : "BT20-083");
+      expect(s.state.players[0]!.hand.some((card) => card.instanceId === s.inst("omnimon").instanceId)).toBe(!evolves);
+      expect(s.state.players[0]!.security).toHaveLength(0);
+    },
+  );
 
   it("allows the printed On Play evolution to be declined", async () => {
     const s = setupEngine(
