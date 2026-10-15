@@ -308,10 +308,10 @@ describe("EX8-009", () => {
     expect(simultaneous.state.memory).toBe(0);
   });
 
-  it("uses the Gigimon alternate for 0", async () => {
+  it.each(["BT12-001", "EX13-001"])("uses the %s Gigimon alternate for 0 in breeding", async (egg) => {
     const s = setupEngine({
       0: {
-        breeding: { card: "BT12-001", as: "gigimon" },
+        breeding: { card: egg, as: "gigimon" },
         hand: [{ card: "EX8-009", as: "guilmon" }],
       },
     });
@@ -328,6 +328,9 @@ describe("EX8-009", () => {
     await settle(() => s.perm("gigimon").topCard.instanceId === s.inst("guilmon").instanceId);
     expect(s.state.memory).toBe(0);
     expect(s.perm("gigimon").topCard.cardId).toBe("EX8-009");
+    expect(s.perm("gigimon").stack.map((card) => card.cardId)).toEqual([egg]);
+    expect(s.state.pendingDecision).toBeUndefined();
+    expect(s.events.some((event) => event.kind === "effectTriggered" && event.sourceCardId === "EX8-009")).toBe(false);
   });
 
   it.each([
