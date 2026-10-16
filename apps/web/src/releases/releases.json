@@ -1,5 +1,28 @@
 [
   {
+    "version": "1.30.2-beta",
+    "releasedAt": "2026-10-16",
+    "summaryKey": "releases.1.30.2-beta.summary",
+    "features": [],
+    "fixes": [
+      {
+        "textKey": "releases.1.30.2-beta.fix.clock"
+      },
+      {
+        "textKey": "releases.1.30.2-beta.fix.story"
+      },
+      {
+        "textKey": "releases.1.30.2-beta.fix.layout"
+      },
+      {
+        "textKey": "releases.1.30.2-beta.fix.effects"
+      },
+      {
+        "textKey": "releases.1.30.2-beta.fix.bots"
+      }
+    ]
+  },
+  {
     "version": "1.30.1-beta",
     "releasedAt": "2026-10-16",
     "summaryKey": "releases.1.30.1-beta.summary",

@@ -1,4 +1,40 @@
 {
+  "releases.1.30.2-beta.summary": {
+    "en": "Fixes for match clocks, story deck shuffling, effect timing, and bot decisions.",
+    "pt-BR": "Correções nos relógios de partida, no embaralhamento de decks da história, na ordem dos efeitos e nas decisões dos bots.",
+    "es": "Correcciones en los relojes de partida, el barajado de mazos de historia, el orden de efectos y las decisiones de los bots.",
+    "it": "Correzioni ai timer delle partite, al mescolamento dei mazzi della storia, all’ordine degli effetti e alle decisioni dei bot."
+  },
+  "releases.1.30.2-beta.fix.clock": {
+    "en": "Match clocks use a shared time bank with decision windows, and expired decisions receive legal responses.",
+    "pt-BR": "Os relógios usam uma reserva de tempo com janelas de decisão, e decisões expiradas recebem respostas válidas.",
+    "es": "Los relojes usan una reserva de tiempo con ventanas de decisión y las decisiones vencidas reciben respuestas válidas.",
+    "it": "I timer usano una riserva di tempo con finestre decisionali e le decisioni scadute ricevono risposte valide."
+  },
+  "releases.1.30.2-beta.fix.story": {
+    "en": "Story battle decks are shuffled for each match.",
+    "pt-BR": "Os decks das batalhas da história são embaralhados a cada partida.",
+    "es": "Los mazos de las batallas de historia se barajan en cada partida.",
+    "it": "I mazzi delle battaglie della storia vengono mescolati a ogni partita."
+  },
+  "releases.1.30.2-beta.fix.layout": {
+    "en": "Fixed battlefield layout flickering in zoomed browser windows.",
+    "pt-BR": "Corrigida a oscilação do layout do campo em janelas do navegador com zoom.",
+    "es": "Corregido el parpadeo del campo en ventanas del navegador con zoom.",
+    "it": "Corretto lo sfarfallio del campo nelle finestre del browser con zoom."
+  },
+  "releases.1.30.2-beta.fix.effects": {
+    "en": "Fixed deletion follow-up timing, battle-win trigger ordering, Apocalymon material choices, and once-per-turn breeding cost reductions.",
+    "pt-BR": "Corrigida a ordem dos efeitos após deleções e vitórias em batalha, a seleção de materiais de Apocalymon e as reduções de custo uma vez por turno na criação.",
+    "es": "Corregidos el orden de efectos tras eliminaciones y victorias en batalla, la selección de materiales de Apocalymon y las reducciones de coste una vez por turno en crianza.",
+    "it": "Corretti l’ordine degli effetti dopo eliminazioni e vittorie in battaglia, la selezione dei materiali di Apocalymon e le riduzioni di costo una volta per turno nell’area di allevamento."
+  },
+  "releases.1.30.2-beta.fix.bots": {
+    "en": "Bots evaluate Alliance support consistently and training matches can resolve Assembly and DigiXros material choices.",
+    "pt-BR": "Os bots avaliam o apoio de Alliance de forma consistente, e partidas de treinamento conseguem resolver a seleção de materiais de Assembly e DigiXros.",
+    "es": "Los bots evalúan el apoyo de Alliance de forma coherente y las partidas de entrenamiento pueden resolver la selección de materiales de Assembly y DigiXros.",
+    "it": "I bot valutano il supporto di Alliance in modo coerente e le partite di addestramento possono risolvere la selezione dei materiali di Assembly e DigiXros."
+  },
   "releases.1.30.1-beta.summary": {
     "en": "Fixes for story progress and for Assembly and DigiXros materials with different names.",
     "pt-BR": "Correções no progresso da história e nos materiais de Assembly e DigiXros com nomes diferentes.",
