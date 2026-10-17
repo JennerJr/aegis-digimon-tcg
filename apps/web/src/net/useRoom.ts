@@ -1,3 +1,5 @@
+import { ClientErrorKind } from "@aegis/shared/clientErrors/ClientErrorKind";
+import { watchRoomMessageErrors } from "@/net/watchRoomMessageErrors";
 import { resetRoomState } from "@/net/resetRoomState";
 import { ROLLBACK_RESET_CHANNEL } from "@aegis/shared/protocol/RollbackKind";
 import { CONNECTION_REPORT_CHANNEL, type ConnectionReport } from "@aegis/shared/protocol/ConnectionReport";
@@ -251,6 +253,7 @@ export function useRoom(options: AegisJoinOptions, match?: MatchConfig, disabled
 
     let stopHeartbeat = () => {};
     let stopLiveness = () => {};
+    let stopMessageRecovery = () => {};
 
     const bindRoom = (room: AegisRoom) => {
       // attemptReconnect owns recovery; the SDK's own reconnection would race it for the seat.
@@ -279,6 +282,11 @@ export function useRoom(options: AegisJoinOptions, match?: MatchConfig, disabled
       stopHeartbeat = () => clearInterval(heartbeat);
       stopLiveness();
       stopLiveness = watchRoomLiveness({ room });
+      stopMessageRecovery();
+      stopMessageRecovery = watchRoomMessageErrors({
+        room,
+        report: (error) => clientErrorReporter.capture({ kind: ClientErrorKind.ERROR.value, error }),
+      });
 
       room.onMessage<UsedDeck>(OPPONENT_DECK_CHANNEL, (message) => setOpponentDeck(structuredClone(message)));
       room.onMessage<UsedDeck>(USED_DECK_CHANNEL, (message) => setUsedDeck(structuredClone(message)));
@@ -498,6 +506,7 @@ export function useRoom(options: AegisJoinOptions, match?: MatchConfig, disabled
 
     return () => {
       cancelled = true;
+      stopMessageRecovery();
       stopHeartbeat();
       stopLiveness();
       clientErrorReporter.setMatchContext(undefined);

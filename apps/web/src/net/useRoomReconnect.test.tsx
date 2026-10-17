@@ -1,3 +1,4 @@
+import { Room, CloseCode, Protocol } from "@colyseus/sdk";
 import { OPPONENT_DECK_CHANNEL } from "@aegis/shared/decks/OPPONENT_DECK_CHANNEL";
 import { USED_DECK_CHANNEL, type UsedDeck } from "@aegis/shared/decks/UsedDeck";
 // @vitest-environment jsdom
@@ -51,15 +52,27 @@ interface FakeRoom {
   emitOpponentDeck: (deck: UsedDeck) => void;
 }
 
+class DecodingRoom extends Room {
+  receive(event: MessageEvent) {
+    this.onMessageCallback(event);
+  }
+}
+
 function fakeRoom(roomId: string, { answersPings = true }: { answersPings?: boolean } = {}): FakeRoom {
   let onState: ((state: GameState) => void) | undefined;
   let onLeave: ((code: number) => void) | undefined;
   const messages = new Map<string, (message: DecisionRequest | SequencedServerEvent | UsedDeck) => void>();
+  const decoder = new DecodingRoom("decoder");
+  decoder.onMessage("x", () => {});
   const room = {
     roomId,
     sessionId: `${roomId}-session`,
     reconnectionToken: `${roomId}:token`,
-    connection: { isOpen: true, close: vi.fn<(code: number) => void>((code) => onLeave?.(code)) },
+    connection: {
+      isOpen: true,
+      events: { onmessage: (event: MessageEvent) => decoder.receive(event) },
+      close: vi.fn<(code: number) => void>((code) => onLeave?.(code)),
+    },
     reconnection: { enabled: true },
     ping: (answer: (ms: number) => void) => {
       if (answersPings) answer(20);
@@ -130,6 +143,24 @@ describe("useRoom reconnection token persistence", () => {
       [2, 3],
       [3, 6],
     ]);
+  });
+
+  it("resumes the same seat when a received MessagePack frame cannot be decoded", async () => {
+    const joined = fakeRoom("damaged-frame");
+    const resumed = fakeRoom("damaged-frame");
+    joinOrCreate.mockResolvedValue(joined.room);
+    reconnect.mockResolvedValue(resumed.room);
+    const { result } = renderHook(() => useRoom(OPTIONS));
+    await waitFor(() => expect(result.current.status).toBe("connected"));
+    const frame = new MessageEvent("message", {
+      data: new Uint8Array([Protocol.ROOM_DATA, 161, 120, 129, 161]).buffer,
+    });
+    expect(() => act(() => joined.room.connection.events.onmessage?.(frame))).not.toThrow();
+    await waitFor(() => expect(result.current.room).toBe(resumed.room));
+    expect(joined.room.connection.close).toHaveBeenCalledExactlyOnceWith(CloseCode.MAY_TRY_RECONNECT);
+    expect(reconnect).toHaveBeenCalledExactlyOnceWith("damaged-frame:token", "legacy");
+    expect(joinOrCreate).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe("connected");
   });
 
   it("persists the reconnection token once a fresh join binds", async () => {
