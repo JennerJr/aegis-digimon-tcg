@@ -84,6 +84,7 @@ installPreloadErrorRecovery({
   target: window,
   readStorage: () => window.sessionStorage,
   reload: () => window.location.reload(),
+  isOnline: () => navigator.onLine,
 });
 const container = document.getElementById("root");
 if (!container) throw new Error("#root not found");
