@@ -26,6 +26,9 @@
       },
       {
         "textKey": "releases.1.31.2-beta.fix.opponentChoice"
+      },
+      {
+        "textKey": "releases.1.31.2-beta.fix.clientRecovery"
       }
     ]
   },

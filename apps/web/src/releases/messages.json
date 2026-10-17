@@ -2872,5 +2872,11 @@
     "pt-BR": "Seventh Divine Cruz e efeitos semelhantes agora perguntam ao oponente antes de descartar sua segurança, independentemente da resposta salva pelo controlador.",
     "es": "Seventh Divine Cruz y efectos similares ahora preguntan al oponente antes de descartar su seguridad, independientemente de la respuesta guardada por el controlador.",
     "it": "Seventh Divine Cruz ed effetti simili ora chiedono all’avversario prima di scartare la sua sicurezza, indipendentemente dalla risposta salvata dal controllore."
+  },
+  "releases.1.31.2-beta.fix.clientRecovery": {
+    "en": "Improved recovery after unreadable game messages. Failed asset loads now wait for connectivity before reloading; module execution errors no longer trigger an automatic reload.",
+    "pt-BR": "Melhorada a recuperação após mensagens de jogo ilegíveis. Falhas ao carregar arquivos agora aguardam a conexão antes de recarregar; erros de execução de módulos não provocam mais recarga automática.",
+    "es": "Mejorada la recuperación tras mensajes de partida ilegibles. Los errores de carga esperan a recuperar la conexión antes de recargar; los errores de ejecución de módulos ya no causan una recarga automática.",
+    "it": "Migliorato il recupero dopo messaggi di partita illeggibili. Gli errori di caricamento attendono la connessione prima di ricaricare; gli errori di esecuzione dei moduli non causano più un ricaricamento automatico."
   }
 }
